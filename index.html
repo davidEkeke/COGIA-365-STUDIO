@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COGIA 365 Studio — AI Engineering & Compliance</title>
+<style>
+:root{--navy:#102a43;--blue:#1976d2;--green:#20a464;--orange:#f4a62a;--red:#df4b3f;--bg:#f3f6fa;--line:#dce4ee;--text:#152536}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:16px}
+.app{height:100vh;display:grid;grid-template-columns:270px minmax(520px,1fr) 360px;overflow:hidden}
+.left{background:var(--navy);color:white;display:flex;flex-direction:column;min-height:0}.brand{background:#fff;color:var(--navy);padding:18px 20px;border-right:1px solid var(--line)}
+.brand b{font-size:23px}.brand span{color:var(--blue)}.brand small{display:block;margin-top:3px;color:#60758a}
+.lic{padding:10px 18px;font-size:12px;background:#0c2237;color:#cfe0f2}.nav{padding:12px;overflow:auto;flex:1}.nav h5{margin:8px 8px 10px;color:#9eb4ca;letter-spacing:.12em}
+.mod{border-radius:9px;margin:5px 0;overflow:hidden}.mod>button{width:100%;border:0;background:transparent;color:white;padding:12px;text-align:left;font-weight:700;font-size:14px;cursor:pointer}
+.mod>button:hover,.mod.active>button{background:#173b5e}.sub{display:none;padding:2px 8px 8px 20px}.active .sub{display:block}.sub a{display:block;color:#cfe0f2;padding:7px;text-decoration:none;border-radius:6px;font-size:13px}.sub a:hover{background:#214a70;color:#fff}
+.agent{border-top:1px solid #2d4d69;padding:14px 18px;background:#0e2740}.dot{display:inline-block;width:8px;height:8px;background:var(--green);border-radius:50%;margin-right:7px}
+.center{display:flex;flex-direction:column;min-width:0}.top{height:68px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+.top h2{font-size:18px;margin:0}.actions button,.primary{border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px 12px;margin-left:6px;cursor:pointer}.primary{background:var(--blue)!important;color:white;border-color:var(--blue)!important}
+.work{padding:22px;overflow:auto}.hero{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px}.eyebrow{color:var(--blue);font-weight:800;font-size:12px;letter-spacing:.08em}.hero h1{font-size:26px;margin:8px 0}.hero p{color:#5c6f82;max-width:760px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px}.card b{display:block;margin-bottom:6px}.status{font-size:12px;color:var(--green);font-weight:700}
+.chat{margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}.chathead{padding:13px 16px;border-bottom:1px solid var(--line);font-weight:700}.msg{padding:18px;color:#44596c}.composer{display:flex;padding:12px;border-top:1px solid var(--line);gap:8px}.composer input{flex:1;padding:11px;border:1px solid var(--line);border-radius:8px}
+.right{background:#fff;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.rtop{padding:18px;border-bottom:1px solid var(--line);font-weight:800}.tabs{display:flex;border-bottom:1px solid var(--line)}.tabs button{flex:1;border:0;background:#fff;padding:12px;cursor:pointer}.tabs button.on{color:var(--blue);border-bottom:2px solid var(--blue)}
+.preview{margin:16px;border:1px solid var(--line);border-radius:12px;padding:16px}.preview h3{margin-top:0}.kpi{display:grid;grid-template-columns:1fr 1fr;gap:8px}.kpi div{padding:12px;background:#f6f9fc;border-radius:8px}.kpi strong{display:block;font-size:20px}.foot{margin-top:auto;padding:13px 16px;border-top:1px solid var(--line);font-size:12px;color:#66798b}
+@media(max-width:1050px){.app{grid-template-columns:230px 1fr}.right{display:none}}@media(max-width:720px){.app{display:block;overflow:auto}.left{min-height:auto}.nav{display:none}.center{min-height:100vh}.cards{grid-template-columns:1fr}}
+</style></head>
+<body><div class="app">
+<aside class="left"><div class="brand"><b>COGIA <span>365</span> Studio</b><small>AI Engineering & Compliance</small></div><div class="lic">LICENCE ACCORDÉE À<br><b>Cabinet One — Pack Professionnel</b></div>
+<nav class="nav"><h5>ORGANISATION</h5>
+<div class="mod"><button>01 PILOTAGE ›</button><div class="sub"><a>Vue d’ensemble</a><a>Activités</a><a>Missions</a><a>Alertes</a><a>Reprendre le travail</a></div></div>
+<div class="mod"><button>02 PROJETS ›</button><div class="sub"><a>Tous les projets</a><a>Workspaces</a><a>Équipes</a><a>Décisions</a><a>＋ Nouveau projet</a></div></div>
+<div class="mod active"><button>03 STUDIO ›</button><div class="sub"><a>COGIA</a><a>Concevoir</a><a>Développer</a><a>Agents</a><a>Codex</a><a>Live Preview</a></div></div>
+<div class="mod"><button>04 DOCUMENTS & CONFORMITÉ ›</button><div class="sub"><a>Documents</a><a>Versions & livrables</a><a>Tests & contrôles</a><a>Rapports</a><a>Audits</a><a>Preuves</a><a>Evidence Packs</a></div></div>
+<div class="mod"><button>05 ADMINISTRATION ›</button><div class="sub"><a>Utilisateurs</a><a>Organisation</a><a>Rôles & droits</a><a>Licence & abonnement</a><a>Sécurité</a><a>Paramètres</a></div></div>
+</nav><div class="agent"><span class="dot"></span><b>AI Agent COGIA</b><br><small>Disponible · Nouvelle conversation</small></div></aside>
+<main class="center"><header class="top"><div><small>PROJET ACTIF</small><h2>COGIA 365 Studio Full Web</h2></div><div class="actions"><button>⌕ Rechercher</button><button>◫ Notifications</button><button>?</button></div></header>
+<section class="work"><div class="hero"><div class="eyebrow">STUDIO — COGIA</div><h1>De l’idée à une application fonctionnelle, contrôlée et démontrable.</h1><p>COGIA structure le projet, conçoit, réalise, teste, corrige et produit les preuves dans un environnement Full Web, Local-first et auditable.</p><button class="primary">▶ Lancer la réalisation autonome</button>
+<div class="cards"><div class="card"><b>Cadrage chargé</b><span class="status">✓ Prêt</span></div><div class="card"><b>Décisions structurantes</b><span class="status">✓ Vérifiées</span></div><div class="card"><b>Baseline V2</b><span class="status">✓ Protégée</span></div></div></div>
+<div class="chat"><div class="chathead"><span class="dot"></span>Conversation COGIA — Disponible</div><div class="msg">Bonjour David. Le projet <b>COGIA 365 Studio Full Web</b> est chargé. Je peux poursuivre la conception, le développement, les contrôles et les preuves.</div><div class="composer"><input placeholder="Donnez une instruction à COGIA…"><button class="primary">Envoyer ➜</button></div></div></section></main>
+<aside class="right"><div class="rtop">VUES</div><div class="tabs"><button class="on">Affichage</button><button>Interface</button><button>HTML</button></div><div class="preview"><small>FORMAT D’AFFICHAGE</small><h3>▣ Ordinateur　▯ Tablette　▯ Smartphone</h3><hr><p><b>Mission et runtime</b></p><div class="kpi"><div>Build<strong>● Sain</strong></div><div>Mode<strong>Local-first</strong></div><div>Contrôles<strong>40/40</strong></div><div>Version<strong>V2</strong></div></div><p><button class="primary">Ouvrir Live Preview</button></p><p><b>Artefacts récents</b><br>index.html V2<br>Interface principale HD<br>ADR-365-045 Cabinet One</p></div><div class="foot">© Cabinet One · COGIA 365 Studio V2</div></aside>
+</div><script>
+document.querySelectorAll('.mod>button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.mod').forEach(m=>m.classList.remove('active'));b.parentElement.classList.add('active')});
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on')});
+</script></body></html>
