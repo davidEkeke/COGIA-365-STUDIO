@@ -53,5 +53,46 @@ app.patch("/api/admin/users/:id/status",requireAuth(["super_admin","admin"]),asy
  const q=await pool.query("update users set status=$1,updated_at=now() where id=$2 returning id,email,role,status",[status,req.params.id]);if(!q.rows[0])return res.status(404).json({error:"not_found"});await audit(req.user.sub,"status_changed","user",req.params.id,{status});res.json(q.rows[0]);
 });
 app.get("/api/admin/audit",requireAuth(["super_admin","admin","auditor"]),async(req,res)=>{const q=await pool.query("select id,actor_id,action,entity_type,entity_id,metadata,created_at from audit_log order by created_at desc limit 200");res.json(q.rows)});
+
+app.get("/api/projects",requireAuth(),async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const q=await pool.query("select id,name,status,created_at from projects order by created_at desc");
+ res.json(q.rows);
+});
+app.post("/api/projects",requireAuth(["super_admin","admin","developer"]),async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const name=String(req.body.name||"").trim();
+ if(!name)return res.status(400).json({error:"name_required"});
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]);
+ const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(400).json({error:"organization_required"});
+ const q=await pool.query("insert into projects(organization_id,name,created_by) values($1,$2,$3) returning id,name,status,created_at",[organizationId,name,req.user.sub]);
+ await audit(req.user.sub,"project_created","project",q.rows[0].id,{name});
+ res.status(201).json(q.rows[0]);
+});
+app.patch("/api/projects/:id/status",requireAuth(["super_admin","admin","developer"]),async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const status=String(req.body.status||"").trim();
+ if(!["active","paused","archived"].includes(status))return res.status(400).json({error:"invalid_status"});
+ const q=await pool.query("update projects set status=$1 where id=$2 returning id,name,status,created_at",[status,req.params.id]);
+ if(!q.rows[0])return res.status(404).json({error:"not_found"});
+ await audit(req.user.sub,"project_status_changed","project",req.params.id,{status});
+ res.json(q.rows[0]);
+});
+app.get("/api/dashboard",requireAuth(),async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const [projectsCount,activeProjects,usersCount,auditCount]=await Promise.all([
+  pool.query("select count(*)::int as n from projects"),
+  pool.query("select count(*)::int as n from projects where status='active'"),
+  pool.query("select count(*)::int as n from users where status='active'"),
+  pool.query("select count(*)::int as n from audit_log")
+ ]);
+ res.json({
+  projects:projectsCount.rows[0].n,
+  activeProjects:activeProjects.rows[0].n,
+  activeUsers:usersCount.rows[0].n,
+  auditEvents:auditCount.rows[0].n
+ });
+});
 app.use((err,req,res,next)=>{console.error(err);res.status(500).json({error:"internal_error"})});
 app.listen(process.env.PORT||8080,()=>console.log("COGIA 365 Studio listening"));
