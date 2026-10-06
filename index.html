@@ -22,6 +22,82 @@
 .preview{margin:16px;border:1px solid var(--line);border-radius:12px;padding:16px}.preview h3{margin-top:0}.kpi{display:grid;grid-template-columns:1fr 1fr;gap:8px}.kpi div{padding:12px;background:#f6f9fc;border-radius:8px}.kpi strong{display:block;font-size:20px}.foot{margin-top:auto;padding:13px 16px;border-top:1px solid var(--line);font-size:12px;color:#66798b}
 @media(max-width:1050px){.app{grid-template-columns:230px 1fr}.right{display:none}}@media(max-width:720px){.app{display:block;overflow:auto}.left{min-height:auto}.nav{display:none}.center{min-height:100vh}.cards{grid-template-columns:1fr}}
 .auth-screen{position:fixed;inset:0;background:#eef3f8;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}.auth-card{width:min(440px,100%);background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:0 20px 60px #102a4320}.auth-card h1{margin:8px 0;font-size:25px}.auth-card input{width:100%;padding:12px;margin:7px 0;border:1px solid var(--line);border-radius:8px;font-size:15px}.auth-card button{width:100%;margin:8px 0;padding:11px}.auth-links{display:flex;justify-content:space-between;gap:12px;font-size:13px}.auth-links a{color:var(--blue);cursor:pointer}.auth-note{font-size:12px;color:#687b8d}.hidden{display:none!important}
+
+/* === COGIA 365 Studio — responsive shell V2.1 === */
+html,body{width:100%;min-width:0;overflow-x:hidden}
+button,input,select{font:inherit}
+button{min-height:40px}
+.app{width:100%;min-width:0}
+.left,.center,.right{min-width:0}
+.center{overflow:hidden}
+.work{min-width:0}
+.hero,.chat,.pilot-panel,.pilot-kpi,.card,.preview{box-shadow:0 1px 2px rgba(16,42,67,.04)}
+.top{position:sticky;top:0;z-index:25;min-width:0}
+.top>div:first-child{min-width:0}
+.top h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:44vw}
+.actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.actions button{margin-left:0;white-space:nowrap}
+.mobile-shell-actions{display:none;gap:8px;align-items:center}
+.mobile-shell-actions button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 10px;cursor:pointer}
+.table-wrap{width:100%;overflow:auto;-webkit-overflow-scrolling:touch}
+.pilot-table{min-width:620px}
+.pilot-toolbar{flex-wrap:wrap}
+.pilot-toolbar input{min-width:220px}
+.composer{align-items:center}
+.composer input{min-width:0}
+.brand-logo{display:block;width:100%;max-width:220px;height:auto;object-fit:contain}
+.shell-overlay{display:none;position:fixed;inset:0;background:rgba(7,25,43,.42);z-index:80}
+body.nav-open .shell-overlay,body.views-open .shell-overlay{display:block}
+@media (min-width:1400px){
+ .app{grid-template-columns:290px minmax(620px,1fr) 390px}
+ .work{padding:26px}
+ .hero h1{font-size:30px}
+}
+@media (max-width:1180px){
+ .app{grid-template-columns:250px minmax(0,1fr)}
+ .right{display:flex;position:fixed;top:0;right:0;bottom:0;width:min(390px,92vw);z-index:100;transform:translateX(105%);transition:transform .2s ease;box-shadow:-16px 0 40px rgba(16,42,67,.18);overflow:auto}
+ body.views-open .right{transform:translateX(0)}
+ .mobile-shell-actions{display:flex}
+ .actions #viewsBtn{display:none}
+ .top h2{max-width:36vw}
+}
+@media (max-width:860px){
+ .app{display:block;height:auto;min-height:100vh;overflow:visible}
+ .left{display:flex;position:fixed;top:0;left:0;bottom:0;width:min(300px,88vw);z-index:100;transform:translateX(-105%);transition:transform .2s ease;box-shadow:16px 0 40px rgba(16,42,67,.18)}
+ body.nav-open .left{transform:translateX(0)}
+ .nav{display:block;overflow:auto}
+ .center{min-height:100vh}
+ .top{padding:12px 14px;align-items:flex-start;gap:10px}
+ .top h2{max-width:52vw;font-size:16px}
+ .actions{display:none}
+ .mobile-shell-actions{display:flex;margin-left:auto}
+ .work{padding:14px}
+ .cards,.pilot-grid{grid-template-columns:1fr}
+ .pilot-panels{grid-template-columns:1fr}
+ .chat{margin-top:12px}
+ .composer{flex-direction:column;align-items:stretch}
+ .composer .primary{margin-left:0}
+ .rtop{position:sticky;top:0;background:#fff;z-index:2}
+}
+@media (max-width:560px){
+ body{font-size:15px}
+ .top{flex-wrap:wrap}
+ .top>div:first-child{width:calc(100% - 112px)}
+ .top h2{max-width:100%}
+ .work{padding:10px}
+ .hero{padding:16px;border-radius:12px}
+ .hero h1{font-size:22px;line-height:1.18}
+ .cards{gap:8px}
+ .pilot-kpi,.pilot-panel,.card,.preview{padding:13px}
+ .pilot-toolbar{align-items:stretch}
+ .pilot-toolbar input,.pilot-toolbar select,.pilot-toolbar button{width:100%;min-width:0}
+ .auth-screen{padding:12px}
+ .auth-card{padding:20px;border-radius:12px}
+ .auth-links{flex-direction:column}
+}
+@media (prefers-reduced-motion:reduce){
+ *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
 </style></head>
 <body><div id="authScreen" class="auth-screen"><div class="auth-card"><div class="eyebrow">COGIA 365 STUDIO</div><h1>Connexion</h1><p>Accédez à votre espace de travail sécurisé.</p><div id="loginForm"><input id="loginEmail" type="email" placeholder="Adresse e-mail"><input id="loginPassword" type="password" placeholder="Mot de passe"><label class="auth-note"><input id="rememberMe" type="checkbox" style="width:auto"> Se souvenir de moi</label><button id="loginBtn" class="primary">Se connecter</button><button id="previewAccessBtn" type="button">Aperçu de l’application</button><div class="auth-links"><a id="forgotLink">Mot de passe oublié ?</a><a id="firstLoginLink">Première connexion</a></div></div><div id="resetForm" class="hidden"><p>Indiquez votre adresse e-mail. La procédure sécurisée de réinitialisation sera envoyée par le service d'identité.</p><input id="resetEmail" type="email" placeholder="Adresse e-mail"><button id="resetBtn" class="primary">Continuer</button><button id="backLogin">Retour à la connexion</button></div><p class="auth-note">La connexion sécurisée reste disponible. Pour tester l’interface sans identifiants, utilisez « Aperçu de l’application ».</p></div></div><div class="app">
 <aside class="left"><div class="brand"><b>COGIA <span>365</span> Studio</b><small>AI Engineering & Compliance</small></div><div class="lic">LICENCE ACCORDÉE À<br><b>Cabinet One — Pack Professionnel</b><br><small>Licence active · Renouvellement : 31/08/2027</small></div>
@@ -32,12 +108,23 @@
 <div class="mod" data-module="docs"><button>04 DOCUMENTS & CONFORMITÉ ›</button><div class="sub"><a data-doc-view="documents">Documents</a><a data-doc-view="versions">Versions & livrables</a><a data-doc-view="tests">Tests & contrôles</a><a data-doc-view="reports">Rapports</a><a data-doc-view="audits">Audits</a><a data-doc-view="evidence">Preuves</a><a data-doc-view="packs">Evidence Packs</a></div></div>
 <div class="mod" data-module="admin"><button>05 ADMINISTRATION ›</button><div class="sub"><a data-admin-view="users">Utilisateurs</a><a data-admin-view="org">Organisation</a><a data-admin-view="roles">Rôles & droits</a><a data-admin-view="license">Licence & abonnement</a><a data-admin-view="usage">Consommation</a><a data-admin-view="security">Sécurité</a><a data-admin-view="settings">Paramètres</a></div></div>
 </nav><div class="agent"><span class="dot"></span><b>AI Agent COGIA</b><br><small>Disponible · Nouvelle conversation</small></div></aside>
-<main class="center"><header class="top"><div><small>PROJET ACTIF</small><h2>COGIA 365 Studio Full Web</h2></div><div class="actions"><button id="searchBtn">⌕ Rechercher dans Studio</button><button id="viewsBtn">Ouvrir les vues</button><button id="notifBtn">◫ Notifications</button><button id="helpBtn">Aide ?</button></div></header>
+<main class="center"><header class="top"><div><small>PROJET ACTIF</small><h2>COGIA 365 Studio Full Web</h2></div><div class="mobile-shell-actions"><button id="menuToggle" aria-label="Ouvrir la navigation">☰ Menu</button><button id="viewsToggle" aria-label="Ouvrir les vues">Vues</button></div><div class="actions"><button id="searchBtn">⌕ Rechercher dans Studio</button><button id="viewsBtn">Ouvrir les vues</button><button id="notifBtn">◫ Notifications</button><button id="helpBtn">Aide ?</button></div></header>
 <section class="work"><div id="pilotageView" style="display:none"></div><div id="projectsView" style="display:none"></div><div id="moduleView" style="display:none"></div><div id="studioHome" class="hero"><div class="eyebrow">DE COGIA 365 STUDIO · Studio — COGIA</div><h1>De l’idée à une application fonctionnelle, contrôlée, documentée et démontrable.</h1><p>Exprimez l’idée, COGIA structure le projet : site, portail, application web, mobile, HTML, API ou réponse à appel d’offres.</p><p><b>Mission autonome</b> · Concevoir → Réaliser → Tester → Corriger → Prouver</p><button id="launchBtn" class="primary">▶ Lancer la réalisation autonome</button>
 <div class="cards"><div class="card"><b>Cadrage chargé</b><span class="status">✓ Prêt</span></div><div class="card"><b>Décisions structurantes vérifiées</b><span class="status">✓ OK</span></div><div class="card"><b>Baseline V2 protégée</b><span class="status">✓ OK</span></div></div><p class="status" style="margin-top:16px">✓ Aucune décision bloquante — COGIA poursuit seule la suite logique.</p></div>
 <div class="chat"><div class="chathead"><span class="dot"></span>Conversation COGIA — Disponible</div><div class="msg"><small>Projet actif : COGIA 365 Studio Full Web · Assistant de Cabinet One</small><p>Bonjour David. La conception de l’interface principale V2 est validée. Je peux maintenant poursuivre le développement, exécuter les contrôles et corriger les anomalies jusqu’à obtenir une version fonctionnelle.</p><p>◇ Analyser les risques　 ✓ Lancer les tests　 ▣ Générer les preuves</p></div><div class="composer"><input id="instruction" placeholder="Décrivez simplement votre besoin, sans vocabulaire technique…"><button id="sendBtn" class="primary">Envoyer ➜</button></div></div></section></main>
 <aside class="right"><div class="rtop">VUES</div><div class="tabs"><button class="on">Affichage</button><button>Interface</button><button>HTML</button></div><div class="preview"><small>FORMAT D’AFFICHAGE</small><h3>▣ Ordinateur　▯ Tablette　▯ Smartphone</h3><hr><p><b>Mission et runtime</b></p><div class="kpi"><div>Build<strong>● Sain</strong></div><div>Mode<strong>Local-first</strong></div><div>Contrôles<strong>40/40</strong></div><div>Version<strong>V2</strong></div></div><p><button id="previewBtn" class="primary">Ouvrir Live Preview</button></p><p><b>Artefacts récents</b><br>index.html V2<br>Interface principale HD<br>ADR-365-045 Cabinet One</p><p><span class="status">● Version Sites opérationnelle</span><br>Contrôles : <b>40/40 réussis</b><br>Synchronisation : mode hors ligne<br>OpenAI : à activer</p></div><div class="foot">© Cabinet One · COGIA 365 Studio V2</div></aside>
-</div><script>
+</div><div id="shellOverlay" class="shell-overlay"></div><script>
+
+const shellOverlay=document.getElementById('shellOverlay');
+const closeShell=()=>document.body.classList.remove('nav-open','views-open');
+document.getElementById('menuToggle').onclick=()=>{document.body.classList.remove('views-open');document.body.classList.toggle('nav-open')};
+document.getElementById('viewsToggle').onclick=()=>{document.body.classList.remove('nav-open');document.body.classList.toggle('views-open')};
+shellOverlay.onclick=closeShell;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeShell()});
+document.querySelectorAll('.sub a').forEach(a=>a.addEventListener('click',()=>{if(window.innerWidth<=860)document.body.classList.remove('nav-open')}));
+const wrapTables=()=>document.querySelectorAll('.pilot-table').forEach(t=>{if(!t.parentElement.classList.contains('table-wrap')){const w=document.createElement('div');w.className='table-wrap';t.parentNode.insertBefore(w,t);w.appendChild(t)}});
+const observer=new MutationObserver(wrapTables);observer.observe(document.querySelector('.work'),{childList:true,subtree:true});wrapTables();
+
 document.querySelectorAll('.mod>button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.mod').forEach(m=>m.classList.remove('active'));b.parentElement.classList.add('active')});
 const studio=document.getElementById('studioHome'), pilot=document.getElementById('pilotageView');
 const loadDashboard=async()=>{try{const d=await api('/api/dashboard');document.querySelectorAll('[data-live-kpi]').forEach(el=>{const k=el.dataset.liveKpi;if(d[k]!==undefined)el.textContent=d[k]})}catch(e){console.warn('dashboard unavailable',e.message)}};
