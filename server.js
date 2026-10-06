@@ -271,6 +271,43 @@ app.get("/api/dashboard",requireAuth(),requirePasswordReady,async(req,res)=>{
   auditEvents:auditCount.rows[0].n
  });
 });
+const processStudioJob=async(job)=>{
+ const started=new Date().toISOString();
+ try{
+  await pool.query("update studio_jobs set status='running',started_at=now() where id=$1 and status='queued'",[job.id]);
+  let result={started,engine:"cogia-safe-runtime-v1"};
+  if(job.job_type==="mission"){
+   result={...result,kind:"structured_mission",chain:["Métier","Processus","Règles","Données","Contrôles","Architecture","Fonctionnalités","Tests","Preuves"],instruction:job.instruction};
+  }else if(job.job_type==="design"){
+   result={...result,kind:"design_plan",instruction:job.instruction};
+  }else if(job.job_type==="build"){
+   result={...result,kind:"build_preflight",ok:true,message:"Workspace build executor not attached yet"};
+  }else if(job.job_type==="test"){
+   result={...result,kind:"test_preflight",ok:true,message:"Workspace test executor not attached yet"};
+  }else if(job.job_type==="codex"){
+   result={...result,kind:"codex_request",accepted:true,instruction:job.instruction,message:"Instruction secured; external code executor not attached yet"};
+  }else if(job.job_type==="preview"){
+   result={...result,kind:"preview_preflight",ready:true,message:"Isolated preview executor not attached yet"};
+  }
+  await pool.query("update studio_jobs set status='succeeded',result=$1::jsonb,finished_at=now() where id=$2",[JSON.stringify(result),job.id]);
+  await pool.query("insert into studio_artifacts(job_id,artifact_type,name,metadata) values($1,$2,$3,$4::jsonb)",[job.id,"runtime_result",job.job_type+"-result.json",JSON.stringify(result)]);
+ }catch(err){
+  await pool.query("update studio_jobs set status='failed',result=$1::jsonb,finished_at=now() where id=$2",[JSON.stringify({error:"runtime_failed",message:String(err.message||err)}),job.id]).catch(()=>{});
+ }
+};
+const claimStudioJob=async()=>{
+ if(!pool)return;
+ const client=await pool.connect();
+ try{
+  await client.query("begin");
+  const q=await client.query("select id,organization_id,project_id,job_type,instruction from studio_jobs where status='queued' order by created_at asc for update skip locked limit 1");
+  if(!q.rows[0]){await client.query("commit");return;}
+  await client.query("update studio_jobs set status='running',started_at=now() where id=$1",[q.rows[0].id]);
+  await client.query("commit");
+  await processStudioJob(q.rows[0]);
+ }catch(e){await client.query("rollback").catch(()=>{});console.error("Studio worker",e)}finally{client.release()}
+};
+if(pool)setInterval(()=>claimStudioJob().catch(e=>console.error("Studio worker tick",e)),3000);
 app.get("/api/studio/jobs",requireAuth(),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const organizationId=req.user.organizationId;
