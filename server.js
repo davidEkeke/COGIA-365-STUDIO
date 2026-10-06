@@ -337,6 +337,33 @@ const executeStaticWorkspace=async(plan)=>{
   previewPath:"/api/studio/preview/"+encodeURIComponent(plan.workspaceId)+"/"
  };
 };
+const callExternalRunner=async(spec,job)=>{
+ const url=process.env.STUDIO_RUNNER_URL;
+ const token=process.env.STUDIO_RUNNER_TOKEN;
+ if(!url)return {ok:false,reason:"runner_not_configured",spec};
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),Math.min((spec?.isolation?.maxSeconds||120)*1000,130000));
+ try{
+  const r=await fetch(url,{
+   method:"POST",
+   headers:{"Content-Type":"application/json",...(token?{"Authorization":"Bearer "+token}:{})},
+   body:JSON.stringify({
+    jobId:job.id,
+    organizationId:job.organization_id,
+    projectId:job.project_id,
+    jobType:job.job_type,
+    workspace:spec,
+    callbackMode:"inline-result"
+   }),
+   signal:controller.signal
+  });
+  let data={}; try{data=await r.json()}catch{}
+  if(!r.ok)return {ok:false,reason:"runner_http_"+r.status,detail:data};
+  return {ok:true,runner:data};
+ }catch(e){
+  return {ok:false,reason:e.name==="AbortError"?"runner_timeout":"runner_unreachable"};
+ }finally{clearTimeout(timer)}
+};
 const processStudioJob=async(job)=>{
  const started=new Date().toISOString();
  try{
@@ -349,18 +376,29 @@ const processStudioJob=async(job)=>{
   }else if(job.job_type==="build"){
    const plan=await buildRuntimePlan(job);
    const execution=plan.stack==="node"?await buildNodeRuntimeSpec(plan):await executeStaticWorkspace(plan);
-   result={...result,kind:"build_result",ok:execution.ok,plan,execution,message:execution.ok?(plan.stack==="node"?"Node/React/Vite isolated build specification prepared":"Static workspace validated"):"Build validation failed"};
+   let runner=null;
+   if(plan.stack==="node"&&execution.ok)runner=await callExternalRunner(execution,job);
+   result={...result,kind:"build_result",ok:plan.stack==="node"?!!runner?.ok:execution.ok,plan,execution,runner,message:plan.stack==="node"?(runner?.ok?"Node/React/Vite build executed by isolated runner":"Node/React/Vite runner unavailable"):(execution.ok?"Static workspace validated":"Build validation failed")};
   }else if(job.job_type==="test"){
    const plan=await buildRuntimePlan(job);
    const execution=plan.stack==="node"?await buildNodeRuntimeSpec(plan):await executeStaticWorkspace(plan);
-   const checks=plan.stack==="node"?{stackDetected:true,isolationRequired:true,frameworkEnabled:execution.ok}:{workspacePresent:execution.reason!=="workspace_directory_missing",entryPoint:!!execution.entry,remoteScriptsBlocked:!(execution.warnings||[]).length};
-   result={...result,kind:"test_result",ok:execution.ok,plan,execution,checks,message:execution.ok?(plan.stack==="node"?"Node/React/Vite test specification prepared":"Static safety checks passed"):"Safety checks failed"};
+   let runner=null;
+   if(plan.stack==="node"&&execution.ok)runner=await callExternalRunner({...execution,operation:"test"},job);
+   const checks=plan.stack==="node"?{stackDetected:true,isolationRequired:true,frameworkEnabled:execution.ok,runnerAvailable:!!runner?.ok}:{workspacePresent:execution.reason!=="workspace_directory_missing",entryPoint:!!execution.entry,remoteScriptsBlocked:!(execution.warnings||[]).length};
+   result={...result,kind:"test_result",ok:plan.stack==="node"?!!runner?.ok:execution.ok,plan,execution,runner,checks,message:plan.stack==="node"?(runner?.ok?"Node/React/Vite tests executed by isolated runner":"Node/React/Vite runner unavailable"):(execution.ok?"Static safety checks passed":"Safety checks failed")};
   }else if(job.job_type==="codex"){
    const plan=await buildRuntimePlan(job);
    result={...result,kind:"codex_plan",accepted:true,instruction:job.instruction,plan,message:"Instruction secured; execution must occur in isolated workspace runtime"};
   }else if(job.job_type==="preview"){
    const plan=await buildRuntimePlan(job);
-   result={...result,kind:"preview_plan",ready:plan.mode==="isolated-plan",plan,message:plan.mode==="isolated-plan"?"Isolated preview plan prepared":"Workspace required before preview"};
+   if(plan.stack==="node"){
+    const spec=await buildNodeRuntimeSpec(plan);
+    const runner=spec.ok?await callExternalRunner({...spec,operation:"preview"},job):null;
+    result={...result,kind:"preview_result",ready:!!runner?.ok,plan,spec,runner,message:runner?.ok?"Node/React/Vite preview started by isolated runner":"Preview runner unavailable"};
+   }else{
+    const execution=await executeStaticWorkspace(plan);
+    result={...result,kind:"preview_result",ready:execution.ok,plan,execution,message:execution.ok?"Static preview ready":"Static preview unavailable"};
+   }
   }
   await pool.query("update studio_jobs set status='succeeded',result=$1::jsonb,finished_at=now() where id=$2",[JSON.stringify(result),job.id]);
   await pool.query("insert into studio_artifacts(job_id,artifact_type,name,metadata) values($1,$2,$3,$4::jsonb)",[job.id,"runtime_result",job.job_type+"-result.json",JSON.stringify(result)]);
