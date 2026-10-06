@@ -284,7 +284,33 @@ const buildRuntimePlan=async(job)=>{
  const ws=await getProjectWorkspace(job.project_id,job.organization_id);
  if(!ws)return {mode:"preflight",reason:"workspace_not_found"};
  const root=safeWorkspacePath(ws.id);
- return {mode:"isolated-plan",workspaceId:ws.id,workspaceName:ws.name,workspaceRoot:root,network:"disabled",readOnlyBase:true,maxSeconds:120,maxMemoryMb:512,stack:"static"};
+ const base={mode:"isolated-plan",workspaceId:ws.id,workspaceName:ws.name,workspaceRoot:root,network:"disabled",readOnlyBase:true,maxSeconds:120,maxMemoryMb:512};
+ const detected=await detectWorkspaceStack(base).catch(()=>({stack:"unknown"}));
+ return {...base,stack:detected.stack,detected};
+};
+const detectWorkspaceStack=async(plan)=>{
+ if(plan.mode!=="isolated-plan")return {stack:"unknown",reason:plan.reason||"invalid_plan"};
+ const root=path.resolve(plan.workspaceRoot);
+ const pkgPath=path.join(root,"package.json");
+ const raw=await fs.readFile(pkgPath,"utf8").catch(()=>null);
+ if(!raw)return {stack:"static",entry:"index.html"};
+ let pkg; try{pkg=JSON.parse(raw)}catch{return {stack:"unknown",reason:"invalid_package_json"}}
+ const deps={...(pkg.dependencies||{}),...(pkg.devDependencies||{})};
+ const scripts=pkg.scripts||{};
+ let framework="node";
+ if(deps.vite)framework="vite";
+ else if(deps.react)framework="react";
+ else if(deps.next)framework="next";
+ const buildScript=typeof scripts.build==="string"?"build":null;
+ const testScript=typeof scripts.test==="string"?"test":null;
+ return {stack:"node",framework,packageManager:"npm",buildScript,testScript,hasLockfile:!!(await fs.stat(path.join(root,"package-lock.json")).catch(()=>null))};
+};
+const buildNodeRuntimeSpec=async(plan)=>{
+ const detected=await detectWorkspaceStack(plan);
+ if(detected.stack!=="node")return {ok:false,detected,reason:"not_node_workspace"};
+ const allowedFrameworks=new Set(["node","vite","react"]);
+ if(!allowedFrameworks.has(detected.framework))return {ok:false,detected,reason:"framework_not_enabled"};
+ return {ok:true,detected,isolation:{engine:"external-container",network:"dependency-install-only",runtimeNetwork:"disabled",readOnlyBase:true,workspaceWrite:"ephemeral",maxSeconds:120,maxMemoryMb:512,noNewPrivileges:true},commands:{install:detected.hasLockfile?"npm ci --ignore-scripts":"npm install --ignore-scripts",build:detected.buildScript?"npm run build":null,test:detected.testScript?"npm test -- --runInBand":null}};
 };
 const executeStaticWorkspace=async(plan)=>{
  if(plan.mode!=="isolated-plan")return {ok:false,reason:plan.reason||"invalid_plan"};
@@ -322,12 +348,13 @@ const processStudioJob=async(job)=>{
    result={...result,kind:"design_plan",instruction:job.instruction};
   }else if(job.job_type==="build"){
    const plan=await buildRuntimePlan(job);
-   const execution=await executeStaticWorkspace(plan);
-   result={...result,kind:"build_result",ok:execution.ok,plan,execution,message:execution.ok?"Static workspace validated":"Static build validation failed"};
+   const execution=plan.stack==="node"?await buildNodeRuntimeSpec(plan):await executeStaticWorkspace(plan);
+   result={...result,kind:"build_result",ok:execution.ok,plan,execution,message:execution.ok?(plan.stack==="node"?"Node/React/Vite isolated build specification prepared":"Static workspace validated"):"Build validation failed"};
   }else if(job.job_type==="test"){
    const plan=await buildRuntimePlan(job);
-   const execution=await executeStaticWorkspace(plan);
-   result={...result,kind:"test_result",ok:execution.ok,plan,execution,checks:{workspacePresent:execution.reason!=="workspace_directory_missing",entryPoint:!!execution.entry,remoteScriptsBlocked:!(execution.warnings||[]).length},message:execution.ok?"Static safety checks passed":"Static safety checks failed"};
+   const execution=plan.stack==="node"?await buildNodeRuntimeSpec(plan):await executeStaticWorkspace(plan);
+   const checks=plan.stack==="node"?{stackDetected:true,isolationRequired:true,frameworkEnabled:execution.ok}:{workspacePresent:execution.reason!=="workspace_directory_missing",entryPoint:!!execution.entry,remoteScriptsBlocked:!(execution.warnings||[]).length};
+   result={...result,kind:"test_result",ok:execution.ok,plan,execution,checks,message:execution.ok?(plan.stack==="node"?"Node/React/Vite test specification prepared":"Static safety checks passed"):"Safety checks failed"};
   }else if(job.job_type==="codex"){
    const plan=await buildRuntimePlan(job);
    result={...result,kind:"codex_plan",accepted:true,instruction:job.instruction,plan,message:"Instruction secured; execution must occur in isolated workspace runtime"};
