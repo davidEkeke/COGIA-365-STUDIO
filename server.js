@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import express from "express";
 import helmet from "helmet";
+import {rateLimit} from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import pg from "pg";
@@ -11,6 +12,8 @@ const app=express();
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 app.use(helmet({contentSecurityPolicy:false}));
 app.use(express.json({limit:"64kb"}));
+const authLimiter=rateLimit({windowMs:15*60*1000,limit:20,standardHeaders:"draft-7",legacyHeaders:false,message:{error:"too_many_requests"}});
+const resetLimiter=rateLimit({windowMs:60*60*1000,limit:5,standardHeaders:"draft-7",legacyHeaders:false,message:{error:"too_many_requests"}});
 app.use(express.static(__dirname));
 
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.PGSSL==="require"?{rejectUnauthorized:false}:undefined}):null;
@@ -20,7 +23,7 @@ const RESET_TTL_MINUTES=30;
 const publicBaseUrl=req=>process.env.APP_URL||`${req.protocol}://${req.get("host")}`;
 
 app.get("/health",async(req,res)=>{try{if(pool)await pool.query("select 1");res.json({ok:true,database:!!pool,auth:!!JWT_SECRET})}catch(e){res.status(503).json({ok:false})}});
-app.post("/api/auth/forgot-password",async(req,res)=>{
+app.post("/api/auth/forgot-password",resetLimiter,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const email=String(req.body.email||"").trim().toLowerCase();
  if(!email)return res.status(400).json({error:"email_required"});
@@ -36,7 +39,7 @@ app.post("/api/auth/forgot-password",async(req,res)=>{
  }
  res.json({ok:true,message:"Si cette adresse existe, une procédure de réinitialisation a été créée."});
 });
-app.post("/api/auth/reset-password",async(req,res)=>{
+app.post("/api/auth/reset-password",resetLimiter,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const token=String(req.body.token||""),next=String(req.body.newPassword||"");
  if(!token||next.length<12)return res.status(400).json({error:"invalid_reset_request"});
@@ -52,7 +55,7 @@ app.post("/api/auth/reset-password",async(req,res)=>{
  }catch(e){await pool.query("rollback");throw e}
  await audit(match.user_id,"password_reset_completed","user",match.user_id);res.json({ok:true});
 });
-app.post("/api/auth/login",async(req,res)=>{
+app.post("/api/auth/login",authLimiter,async(req,res)=>{
  if(!ready())return res.status(503).json({error:"identity_service_not_configured"});
  const email=String(req.body.email||"").trim().toLowerCase(), password=String(req.body.password||"");
  if(!email||!password)return res.status(400).json({error:"credentials_required"});
