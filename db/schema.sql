@@ -75,3 +75,30 @@ create table if not exists password_reset_tokens(
 );
 create index if not exists idx_password_reset_user on password_reset_tokens(user_id);
 create index if not exists idx_password_reset_expiry on password_reset_tokens(expires_at);
+
+create table if not exists studio_jobs(
+ id uuid primary key default gen_random_uuid(),
+ organization_id uuid not null references organizations(id) on delete cascade,
+ project_id uuid references projects(id) on delete cascade,
+ job_type text not null check(job_type in ('mission','design','build','test','codex','preview')),
+ status text not null default 'queued' check(status in ('queued','running','succeeded','failed','cancelled')),
+ instruction text,
+ result jsonb not null default '{}'::jsonb,
+ created_by uuid references users(id),
+ created_at timestamptz not null default now(),
+ started_at timestamptz,
+ finished_at timestamptz
+);
+create index if not exists idx_studio_jobs_org on studio_jobs(organization_id,created_at desc);
+create index if not exists idx_studio_jobs_project on studio_jobs(project_id,created_at desc);
+
+create table if not exists studio_artifacts(
+ id uuid primary key default gen_random_uuid(),
+ job_id uuid not null references studio_jobs(id) on delete cascade,
+ artifact_type text not null,
+ name text not null,
+ path text,
+ metadata jsonb not null default '{}'::jsonb,
+ created_at timestamptz not null default now()
+);
+create index if not exists idx_studio_artifacts_job on studio_artifacts(job_id);
