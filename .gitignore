@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+!runner/.env.example
+node_modules/
+runner/node_modules/
+workspaces/
+*.log
+.DS_Store
