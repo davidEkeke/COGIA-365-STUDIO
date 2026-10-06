@@ -250,6 +250,42 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 .rtop{display:flex;align-items:center;justify-content:space-between}
 #closeViewsBtn{display:none;border:0;background:transparent;font-size:24px;line-height:1;color:#60758a;cursor:pointer;padding:2px 7px}
 @media(max-width:1180px){#closeViewsBtn{display:block}}
+
+/* === Cross-browser stability V2.5 === */
+html{height:100%;background:var(--bg)}
+body{min-height:100%;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.app{min-height:100dvh;height:100dvh}
+.left,.center,.right{min-height:0}
+.left{overflow:hidden}
+.nav{overscroll-behavior:contain}
+.work{overflow:auto;overscroll-behavior:contain}
+.right{overflow:auto;overscroll-behavior:contain}
+*{scrollbar-width:thin;scrollbar-color:#b7c5d4 transparent}
+*::-webkit-scrollbar{width:9px;height:9px}
+*::-webkit-scrollbar-thumb{background:#b7c5d4;border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-track{background:transparent}
+.actions button,.mobile-shell-actions button,.pilot-actions button,.pilot-toolbar button{min-height:40px}
+.sub a{user-select:none}
+.top,.rtop{backdrop-filter:saturate(140%) blur(4px);-webkit-backdrop-filter:saturate(140%) blur(4px)}
+.top{background:rgba(255,255,255,.96)!important}
+.rtop{background:rgba(255,255,255,.96)!important}
+.pilot-panel,.hero,.chat,.preview{contain:paint}
+.table-wrap{border-radius:10px}
+.table-wrap .pilot-table{margin:0}
+@supports not (height:100dvh){.app{min-height:100vh;height:100vh}}
+@media(max-width:860px){
+ .app{height:auto!important;min-height:100dvh}
+ .left,.right{height:100dvh}
+ .center{min-height:100dvh}
+ .work{overflow:visible}
+}
+@media print{
+ .left,.right,.top,.auth-screen{display:none!important}
+ .app{display:block!important;height:auto!important}
+ .work{padding:0!important;overflow:visible!important}
+ .center{display:block!important}
+ body{background:#fff}
+}
 </style></head>
 <body><div id="authScreen" class="auth-screen"><div class="auth-card"><div class="eyebrow">COGIA 365 STUDIO</div><h1>Connexion</h1><p>Accédez à votre espace de travail sécurisé.</p><div id="loginForm"><input id="loginEmail" type="email" placeholder="Adresse e-mail"><input id="loginPassword" type="password" placeholder="Mot de passe"><label class="auth-note"><input id="rememberMe" type="checkbox" style="width:auto"> Se souvenir de moi</label><button id="loginBtn" class="primary">Se connecter</button><button id="previewAccessBtn" type="button">Aperçu de l’application</button><div class="auth-links"><a id="forgotLink">Mot de passe oublié ?</a><a id="firstLoginLink">Première connexion</a></div></div><div id="resetForm" class="hidden"><p>Indiquez votre adresse e-mail. La procédure sécurisée de réinitialisation sera envoyée par le service d'identité.</p><input id="resetEmail" type="email" placeholder="Adresse e-mail"><button id="resetBtn" class="primary">Continuer</button><button id="backLogin">Retour à la connexion</button></div><p class="auth-note">La connexion sécurisée reste disponible. Pour tester l’interface sans identifiants, utilisez « Aperçu de l’application ».</p></div></div><div class="app">
 <aside class="left"><div class="brand"><div class="brand-lockup"><span class="cogia-official"><span class="co-symbol"><i class="co-navy">C</i><i class="co-orange">◆</i><i class="co-blue">◆</i></span><span class="brand-title"><b>COGIA</b><span class="studio-line"><strong>365</strong> Studio</span><small>AI Engineering & Compliance</small></span></span></div></div><div class="lic">LICENCE ACCORDÉE À<br><b>Cabinet One — Pack Professionnel</b><br><small>Licence active · Renouvellement : 31/08/2027</small></div>
@@ -279,6 +315,10 @@ document.querySelectorAll('.sub a').forEach(a=>a.addEventListener('click',()=>se
 const normalizeContent=()=>{document.querySelectorAll('#pilotageView,#projectsView,#moduleView').forEach(v=>{if(v.style.display!=='none'&&v.innerHTML&&!v.firstElementChild?.classList.contains('content-width')){const w=document.createElement('div');w.className='content-width';while(v.firstChild)w.appendChild(v.firstChild);v.appendChild(w)}})};
 const contentObserver=new MutationObserver(()=>requestAnimationFrame(normalizeContent));contentObserver.observe(document.querySelector('.work'),{childList:true,subtree:true});
 
+
+
+const syncViewport=()=>document.documentElement.style.setProperty('--app-vh',window.innerHeight+'px');
+syncViewport();window.addEventListener('resize',syncViewport,{passive:true});
 
 const closeViewsBtn=document.getElementById('closeViewsBtn');
 if(closeViewsBtn)closeViewsBtn.onclick=()=>document.body.classList.remove('views-open');
