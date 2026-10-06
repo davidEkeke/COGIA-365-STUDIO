@@ -271,6 +271,20 @@ app.get("/api/dashboard",requireAuth(),requirePasswordReady,async(req,res)=>{
   auditEvents:auditCount.rows[0].n
  });
 });
+const allowedPreviewStack=new Set(["static","node"]);
+const workspaceRoot=process.env.WORKSPACE_ROOT||path.join(__dirname,"workspaces");
+const safeWorkspacePath=(id)=>path.join(workspaceRoot,String(id).replace(/[^a-zA-Z0-9_-]/g,""));
+const getProjectWorkspace=async(projectId,organizationId)=>{
+ if(!projectId)return null;
+ const q=await pool.query("select w.id,w.name,w.mode,p.id as project_id,p.name as project_name from workspaces w join projects p on p.id=w.project_id where p.id=$1 and p.organization_id=$2 order by w.created_at asc limit 1",[projectId,organizationId]);
+ return q.rows[0]||null;
+};
+const buildRuntimePlan=async(job)=>{
+ const ws=await getProjectWorkspace(job.project_id,job.organization_id);
+ if(!ws)return {mode:"preflight",reason:"workspace_not_found"};
+ const root=safeWorkspacePath(ws.id);
+ return {mode:"isolated-plan",workspaceId:ws.id,workspaceName:ws.name,workspaceRoot:root,network:"disabled",readOnlyBase:true,maxSeconds:120,maxMemoryMb:512,stack:"static"};
+};
 const processStudioJob=async(job)=>{
  const started=new Date().toISOString();
  try{
@@ -281,13 +295,17 @@ const processStudioJob=async(job)=>{
   }else if(job.job_type==="design"){
    result={...result,kind:"design_plan",instruction:job.instruction};
   }else if(job.job_type==="build"){
-   result={...result,kind:"build_preflight",ok:true,message:"Workspace build executor not attached yet"};
+   const plan=await buildRuntimePlan(job);
+   result={...result,kind:"build_plan",ok:plan.mode==="isolated-plan",plan,message:plan.mode==="isolated-plan"?"Isolated build plan prepared":"Workspace required before build"};
   }else if(job.job_type==="test"){
-   result={...result,kind:"test_preflight",ok:true,message:"Workspace test executor not attached yet"};
+   const plan=await buildRuntimePlan(job);
+   result={...result,kind:"test_plan",ok:plan.mode==="isolated-plan",plan,message:plan.mode==="isolated-plan"?"Isolated test plan prepared":"Workspace required before tests"};
   }else if(job.job_type==="codex"){
-   result={...result,kind:"codex_request",accepted:true,instruction:job.instruction,message:"Instruction secured; external code executor not attached yet"};
+   const plan=await buildRuntimePlan(job);
+   result={...result,kind:"codex_plan",accepted:true,instruction:job.instruction,plan,message:"Instruction secured; execution must occur in isolated workspace runtime"};
   }else if(job.job_type==="preview"){
-   result={...result,kind:"preview_preflight",ready:true,message:"Isolated preview executor not attached yet"};
+   const plan=await buildRuntimePlan(job);
+   result={...result,kind:"preview_plan",ready:plan.mode==="isolated-plan",plan,message:plan.mode==="isolated-plan"?"Isolated preview plan prepared":"Workspace required before preview"};
   }
   await pool.query("update studio_jobs set status='succeeded',result=$1::jsonb,finished_at=now() where id=$2",[JSON.stringify(result),job.id]);
   await pool.query("insert into studio_artifacts(job_id,artifact_type,name,metadata) values($1,$2,$3,$4::jsonb)",[job.id,"runtime_result",job.job_type+"-result.json",JSON.stringify(result)]);
