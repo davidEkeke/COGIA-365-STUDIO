@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import fs from "fs/promises";
 import express from "express";
 import helmet from "helmet";
 import {rateLimit} from "express-rate-limit";
@@ -285,6 +286,31 @@ const buildRuntimePlan=async(job)=>{
  const root=safeWorkspacePath(ws.id);
  return {mode:"isolated-plan",workspaceId:ws.id,workspaceName:ws.name,workspaceRoot:root,network:"disabled",readOnlyBase:true,maxSeconds:120,maxMemoryMb:512,stack:"static"};
 };
+const executeStaticWorkspace=async(plan)=>{
+ if(plan.mode!=="isolated-plan")return {ok:false,reason:plan.reason||"invalid_plan"};
+ const root=path.resolve(plan.workspaceRoot);
+ const allowedRoot=path.resolve(workspaceRoot)+path.sep;
+ if(!root.startsWith(allowedRoot))throw new Error("workspace_path_rejected");
+ const stat=await fs.stat(root).catch(()=>null);
+ if(!stat||!stat.isDirectory())return {ok:false,reason:"workspace_directory_missing"};
+ const entries=await fs.readdir(root,{withFileTypes:true});
+ const blockedNames=new Set([".git",".env",".ssh","node_modules"]);
+ const visible=entries.filter(e=>!blockedNames.has(e.name));
+ const files=visible.filter(e=>e.isFile()).map(e=>e.name);
+ const indexFile=files.find(n=>n.toLowerCase()==="index.html");
+ if(!indexFile)return {ok:false,reason:"index_html_missing",files};
+ const source=await fs.readFile(path.join(root,indexFile),"utf8");
+ if(source.length>2_000_000)return {ok:false,reason:"index_too_large"};
+ const dangerous=/<script[^>]+src=["'](?:https?:)?\/\//i.test(source);
+ return {
+  ok:!dangerous,
+  stack:"static",
+  entry:indexFile,
+  files:files.slice(0,200),
+  warnings:dangerous?["Remote script references are blocked in isolated preview"]:[],
+  previewPath:"/api/studio/preview/"+encodeURIComponent(plan.workspaceId)+"/"
+ };
+};
 const processStudioJob=async(job)=>{
  const started=new Date().toISOString();
  try{
@@ -296,10 +322,12 @@ const processStudioJob=async(job)=>{
    result={...result,kind:"design_plan",instruction:job.instruction};
   }else if(job.job_type==="build"){
    const plan=await buildRuntimePlan(job);
-   result={...result,kind:"build_plan",ok:plan.mode==="isolated-plan",plan,message:plan.mode==="isolated-plan"?"Isolated build plan prepared":"Workspace required before build"};
+   const execution=await executeStaticWorkspace(plan);
+   result={...result,kind:"build_result",ok:execution.ok,plan,execution,message:execution.ok?"Static workspace validated":"Static build validation failed"};
   }else if(job.job_type==="test"){
    const plan=await buildRuntimePlan(job);
-   result={...result,kind:"test_plan",ok:plan.mode==="isolated-plan",plan,message:plan.mode==="isolated-plan"?"Isolated test plan prepared":"Workspace required before tests"};
+   const execution=await executeStaticWorkspace(plan);
+   result={...result,kind:"test_result",ok:execution.ok,plan,execution,checks:{workspacePresent:execution.reason!=="workspace_directory_missing",entryPoint:!!execution.entry,remoteScriptsBlocked:!(execution.warnings||[]).length},message:execution.ok?"Static safety checks passed":"Static safety checks failed"};
   }else if(job.job_type==="codex"){
    const plan=await buildRuntimePlan(job);
    result={...result,kind:"codex_plan",accepted:true,instruction:job.instruction,plan,message:"Instruction secured; execution must occur in isolated workspace runtime"};
@@ -326,6 +354,19 @@ const claimStudioJob=async()=>{
  }catch(e){await client.query("rollback").catch(()=>{});console.error("Studio worker",e)}finally{client.release()}
 };
 if(pool)setInterval(()=>claimStudioJob().catch(e=>console.error("Studio worker tick",e)),3000);
+app.get("/api/studio/preview/:workspaceId/*",requireAuth(),requirePasswordReady,async(req,res)=>{
+ const organizationId=req.user.organizationId;
+ const q=await pool.query("select w.id from workspaces w join projects p on p.id=w.project_id where w.id=$1 and p.organization_id=$2",[req.params.workspaceId,organizationId]);
+ if(!q.rows[0])return res.status(404).end();
+ const root=path.resolve(safeWorkspacePath(req.params.workspaceId));
+ const rel=(req.params[0]||"index.html").replace(/^\/+/, "");
+ const target=path.resolve(root,rel);
+ if(!target.startsWith(root+path.sep)&&target!==root)return res.status(403).end();
+ const blocked=[".env",".git","package-lock.json","server.js"];
+ if(blocked.some(x=>rel.split("/").includes(x)))return res.status(404).end();
+ res.set("Content-Security-Policy","default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'none'; frame-ancestors 'self'");
+ res.sendFile(target,err=>{if(err&&!res.headersSent)res.status(404).end()});
+});
 app.get("/api/studio/jobs",requireAuth(),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const organizationId=req.user.organizationId;
