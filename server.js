@@ -92,7 +92,7 @@ app.post("/api/auth/change-password",requireAuth(),async(req,res)=>{
  if(!u||!(await bcrypt.compare(current,u.password_hash)))return res.status(401).json({error:"invalid_credentials"});
  const hash=await bcrypt.hash(next,12);await pool.query("update users set password_hash=$1,must_change_password=false,updated_at=now() where id=$2",[hash,req.user.sub]);await audit(req.user.sub,"password_changed","user",req.user.sub);res.json({ok:true});
 });
-app.get("/api/admin/users",requireAuth(["super_admin","admin"])requirePasswordReady,async(req,res)=>{
+app.get("/api/admin/users",requireAuth(["super_admin","admin"]),requirePasswordReady,async(req,res)=>{
  const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
  if(!organizationId)return res.status(403).json({error:"organization_required"});
  const q=await pool.query("select id,email,display_name,role,status,must_change_password,created_at from users where organization_id=$1 order by created_at desc",[organizationId]);
@@ -135,28 +135,28 @@ app.patch("/api/admin/organization",requireAuth(["super_admin","admin"]),require
  await audit(req.user.sub,"organization_updated","organization",q.rows[0].id,{name});
  res.json(q.rows[0]);
 });
-app.patch("/api/admin/users/:id/role",requireAuth(["super_admin"])requirePasswordReady,async(req,res)=>{
+app.patch("/api/admin/users/:id/role",requireAuth(["super_admin"]),requirePasswordReady,async(req,res)=>{
  const role=String(req.body.role||"");if(!["super_admin","admin","developer","auditor","user"].includes(role))return res.status(400).json({error:"invalid_role"});
  const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
  if(!organizationId)return res.status(403).json({error:"organization_required"});
  const q=await pool.query("update users set role=$1,updated_at=now() where id=$2 and organization_id=$3 returning id,email,role,status",[role,req.params.id,organizationId]);
  if(!q.rows[0])return res.status(404).json({error:"not_found"});await audit(req.user.sub,"role_changed","user",req.params.id,{role,organizationId});res.json(q.rows[0]);
 });
-app.patch("/api/admin/users/:id/status",requireAuth(["super_admin","admin"])requirePasswordReady,async(req,res)=>{
+app.patch("/api/admin/users/:id/status",requireAuth(["super_admin","admin"]),requirePasswordReady,async(req,res)=>{
  const status=String(req.body.status||"");if(!["active","disabled","pending"].includes(status))return res.status(400).json({error:"invalid_status"});
  const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
  if(!organizationId)return res.status(403).json({error:"organization_required"});
  const q=await pool.query("update users set status=$1,updated_at=now() where id=$2 and organization_id=$3 returning id,email,role,status",[status,req.params.id,organizationId]);
  if(!q.rows[0])return res.status(404).json({error:"not_found"});await audit(req.user.sub,"status_changed","user",req.params.id,{status,organizationId});res.json(q.rows[0]);
 });
-app.get("/api/admin/audit",requireAuth(["super_admin","admin","auditor"])requirePasswordReady,async(req,res)=>{
+app.get("/api/admin/audit",requireAuth(["super_admin","admin","auditor"]),requirePasswordReady,async(req,res)=>{
  const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
  if(!organizationId)return res.status(403).json({error:"organization_required"});
  const q=await pool.query("select a.id,a.actor_id,a.action,a.entity_type,a.entity_id,a.metadata,a.created_at,u.display_name as actor_name,u.email as actor_email from audit_log a left join users u on u.id=a.actor_id where u.organization_id=$1 order by a.created_at desc limit 200",[organizationId]);
  res.json(q.rows)
 });
 
-app.get("/api/projects",requireAuth()requirePasswordReady,async(req,res)=>{
+app.get("/api/projects",requireAuth(),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]);
  const organizationId=uq.rows[0]?.organization_id;
@@ -164,7 +164,7 @@ app.get("/api/projects",requireAuth()requirePasswordReady,async(req,res)=>{
  const q=await pool.query("select id,name,status,created_at from projects where organization_id=$1 order by created_at desc",[organizationId]);
  res.json(q.rows);
 });
-app.post("/api/projects",requireAuth(["super_admin","admin","developer"])requirePasswordReady,async(req,res)=>{
+app.post("/api/projects",requireAuth(["super_admin","admin","developer"]),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const name=String(req.body.name||"").trim();
  if(!name)return res.status(400).json({error:"name_required"});
@@ -175,7 +175,7 @@ app.post("/api/projects",requireAuth(["super_admin","admin","developer"])require
  await audit(req.user.sub,"project_created","project",q.rows[0].id,{name});
  res.status(201).json(q.rows[0]);
 });
-app.patch("/api/projects/:id/status",requireAuth(["super_admin","admin","developer"])requirePasswordReady,async(req,res)=>{
+app.patch("/api/projects/:id/status",requireAuth(["super_admin","admin","developer"]),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const status=String(req.body.status||"").trim();
  if(!["active","paused","archived"].includes(status))return res.status(400).json({error:"invalid_status"});
@@ -186,14 +186,14 @@ app.patch("/api/projects/:id/status",requireAuth(["super_admin","admin","develop
  await audit(req.user.sub,"project_status_changed","project",req.params.id,{status});
  res.json(q.rows[0]);
 });
-app.get("/api/workspaces",requireAuth()requirePasswordReady,async(req,res)=>{
+app.get("/api/workspaces",requireAuth(),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
  if(!organizationId)return res.status(403).json({error:"organization_required"});
  const q=await pool.query("select w.id,w.project_id,w.name,w.status,w.mode,w.created_at,p.name as project_name from workspaces w join projects p on p.id=w.project_id where p.organization_id=$1 order by w.created_at desc",[organizationId]);
  res.json(q.rows);
 });
-app.post("/api/workspaces",requireAuth(["super_admin","admin","developer"])requirePasswordReady,async(req,res)=>{
+app.post("/api/workspaces",requireAuth(["super_admin","admin","developer"]),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const projectId=String(req.body.projectId||""),name=String(req.body.name||"").trim(),mode=String(req.body.mode||"local-first");
  if(!projectId||!name)return res.status(400).json({error:"project_and_name_required"});
@@ -205,14 +205,14 @@ app.post("/api/workspaces",requireAuth(["super_admin","admin","developer"])requi
  await audit(req.user.sub,"workspace_created","workspace",q.rows[0].id,{projectId,name,mode});
  res.status(201).json(q.rows[0]);
 });
-app.get("/api/decisions",requireAuth()requirePasswordReady,async(req,res)=>{
+app.get("/api/decisions",requireAuth(),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
  if(!organizationId)return res.status(403).json({error:"organization_required"});
  const q=await pool.query("select d.id,d.project_id,d.title,d.scope,d.status,d.created_at,p.name as project_name from project_decisions d join projects p on p.id=d.project_id where p.organization_id=$1 order by d.created_at desc",[organizationId]);
  res.json(q.rows);
 });
-app.post("/api/decisions",requireAuth(["super_admin","admin","developer","auditor"])requirePasswordReady,async(req,res)=>{
+app.post("/api/decisions",requireAuth(["super_admin","admin","developer","auditor"]),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const projectId=String(req.body.projectId||""),title=String(req.body.title||"").trim(),scope=String(req.body.scope||"").trim();
  if(!projectId||!title)return res.status(400).json({error:"project_and_title_required"});
@@ -224,14 +224,37 @@ app.post("/api/decisions",requireAuth(["super_admin","admin","developer","audito
  await audit(req.user.sub,"decision_created","decision",q.rows[0].id,{projectId,title,scope});
  res.status(201).json(q.rows[0]);
 });
-app.get("/api/project-members",requireAuth()requirePasswordReady,async(req,res)=>{
+app.get("/api/project-members",requireAuth(),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
  if(!organizationId)return res.status(403).json({error:"organization_required"});
  const q=await pool.query("select pm.project_id,pm.user_id,pm.role,pm.created_at,p.name as project_name,u.display_name,u.email from project_members pm join projects p on p.id=pm.project_id join users u on u.id=pm.user_id where p.organization_id=$1 and u.organization_id=$1 order by pm.created_at desc",[organizationId]);
  res.json(q.rows);
 });
-app.get("/api/dashboard",requireAuth()requirePasswordReady,async(req,res)=>{
+app.post("/api/project-members",requireAuth(["super_admin","admin","developer"]),requirePasswordReady,async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const projectId=String(req.body.projectId||"").trim(), userId=String(req.body.userId||"").trim(), role=String(req.body.role||"member").trim();
+ if(!projectId||!userId)return res.status(400).json({error:"project_and_user_required"});
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const pq=await pool.query("select id from projects where id=$1 and organization_id=$2",[projectId,organizationId]);
+ if(!pq.rows[0])return res.status(404).json({error:"project_not_found"});
+ const member=await pool.query("select id from users where id=$1 and organization_id=$2 and status='active'",[userId,organizationId]);
+ if(!member.rows[0])return res.status(404).json({error:"user_not_found"});
+ const q=await pool.query("insert into project_members(project_id,user_id,role) values($1,$2,$3) on conflict(project_id,user_id) do update set role=excluded.role returning project_id,user_id,role,created_at",[projectId,userId,role]);
+ await audit(req.user.sub,"project_member_upserted","project",projectId,{userId,role});
+ res.status(201).json(q.rows[0]);
+});
+app.delete("/api/project-members/:projectId/:userId",requireAuth(["super_admin","admin","developer"]),requirePasswordReady,async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const q=await pool.query("delete from project_members pm using projects p, users u where pm.project_id=p.id and pm.user_id=u.id and pm.project_id=$1 and pm.user_id=$2 and p.organization_id=$3 and u.organization_id=$3 returning pm.project_id,pm.user_id",[req.params.projectId,req.params.userId,organizationId]);
+ if(!q.rows[0])return res.status(404).json({error:"not_found"});
+ await audit(req.user.sub,"project_member_removed","project",req.params.projectId,{userId:req.params.userId});
+ res.json({ok:true});
+});
+app.get("/api/dashboard",requireAuth(),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
  if(!organizationId)return res.status(403).json({error:"organization_required"});
