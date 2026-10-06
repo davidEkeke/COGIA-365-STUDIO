@@ -94,7 +94,10 @@ app.get("/api/admin/audit",requireAuth(["super_admin","admin","auditor"]),async(
 
 app.get("/api/projects",requireAuth(),async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
- const q=await pool.query("select id,name,status,created_at from projects order by created_at desc");
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]);
+ const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const q=await pool.query("select id,name,status,created_at from projects where organization_id=$1 order by created_at desc",[organizationId]);
  res.json(q.rows);
 });
 app.post("/api/projects",requireAuth(["super_admin","admin","developer"]),async(req,res)=>{
@@ -112,49 +115,67 @@ app.patch("/api/projects/:id/status",requireAuth(["super_admin","admin","develop
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const status=String(req.body.status||"").trim();
  if(!["active","paused","archived"].includes(status))return res.status(400).json({error:"invalid_status"});
- const q=await pool.query("update projects set status=$1 where id=$2 returning id,name,status,created_at",[status,req.params.id]);
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const q=await pool.query("update projects set status=$1 where id=$2 and organization_id=$3 returning id,name,status,created_at",[status,req.params.id,organizationId]);
  if(!q.rows[0])return res.status(404).json({error:"not_found"});
  await audit(req.user.sub,"project_status_changed","project",req.params.id,{status});
  res.json(q.rows[0]);
 });
 app.get("/api/workspaces",requireAuth(),async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
- const q=await pool.query("select w.id,w.project_id,w.name,w.status,w.mode,w.created_at,p.name as project_name from workspaces w join projects p on p.id=w.project_id order by w.created_at desc");
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const q=await pool.query("select w.id,w.project_id,w.name,w.status,w.mode,w.created_at,p.name as project_name from workspaces w join projects p on p.id=w.project_id where p.organization_id=$1 order by w.created_at desc",[organizationId]);
  res.json(q.rows);
 });
 app.post("/api/workspaces",requireAuth(["super_admin","admin","developer"]),async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const projectId=String(req.body.projectId||""),name=String(req.body.name||"").trim(),mode=String(req.body.mode||"local-first");
  if(!projectId||!name)return res.status(400).json({error:"project_and_name_required"});
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const pq=await pool.query("select id from projects where id=$1 and organization_id=$2",[projectId,organizationId]);
+ if(!pq.rows[0])return res.status(404).json({error:"project_not_found"});
  const q=await pool.query("insert into workspaces(project_id,name,mode) values($1,$2,$3) returning id,project_id,name,status,mode,created_at",[projectId,name,mode]);
  await audit(req.user.sub,"workspace_created","workspace",q.rows[0].id,{projectId,name,mode});
  res.status(201).json(q.rows[0]);
 });
 app.get("/api/decisions",requireAuth(),async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
- const q=await pool.query("select d.id,d.project_id,d.title,d.scope,d.status,d.created_at,p.name as project_name from project_decisions d join projects p on p.id=d.project_id order by d.created_at desc");
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const q=await pool.query("select d.id,d.project_id,d.title,d.scope,d.status,d.created_at,p.name as project_name from project_decisions d join projects p on p.id=d.project_id where p.organization_id=$1 order by d.created_at desc",[organizationId]);
  res.json(q.rows);
 });
 app.post("/api/decisions",requireAuth(["super_admin","admin","developer","auditor"]),async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const projectId=String(req.body.projectId||""),title=String(req.body.title||"").trim(),scope=String(req.body.scope||"").trim();
  if(!projectId||!title)return res.status(400).json({error:"project_and_title_required"});
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const pq=await pool.query("select id from projects where id=$1 and organization_id=$2",[projectId,organizationId]);
+ if(!pq.rows[0])return res.status(404).json({error:"project_not_found"});
  const q=await pool.query("insert into project_decisions(project_id,title,scope,created_by) values($1,$2,$3,$4) returning id,project_id,title,scope,status,created_at",[projectId,title,scope,req.user.sub]);
  await audit(req.user.sub,"decision_created","decision",q.rows[0].id,{projectId,title,scope});
  res.status(201).json(q.rows[0]);
 });
 app.get("/api/project-members",requireAuth(),async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
- const q=await pool.query("select pm.project_id,pm.user_id,pm.role,pm.created_at,p.name as project_name,u.display_name,u.email from project_members pm join projects p on p.id=pm.project_id join users u on u.id=pm.user_id order by pm.created_at desc");
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const q=await pool.query("select pm.project_id,pm.user_id,pm.role,pm.created_at,p.name as project_name,u.display_name,u.email from project_members pm join projects p on p.id=pm.project_id join users u on u.id=pm.user_id where p.organization_id=$1 and u.organization_id=$1 order by pm.created_at desc",[organizationId]);
  res.json(q.rows);
 });
 app.get("/api/dashboard",requireAuth(),async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
  const [projectsCount,activeProjects,usersCount,auditCount]=await Promise.all([
-  pool.query("select count(*)::int as n from projects"),
-  pool.query("select count(*)::int as n from projects where status='active'"),
-  pool.query("select count(*)::int as n from users where status='active'"),
-  pool.query("select count(*)::int as n from audit_log")
+  pool.query("select count(*)::int as n from projects where organization_id=$1",[organizationId]),
+  pool.query("select count(*)::int as n from projects where organization_id=$1 and status='active'",[organizationId]),
+  pool.query("select count(*)::int as n from users where organization_id=$1 and status='active'",[organizationId]),
+  pool.query("select count(*)::int as n from audit_log a join users u on u.id=a.actor_id where u.organization_id=$1",[organizationId])
  ]);
  res.json({
   projects:projectsCount.rows[0].n,
