@@ -80,17 +80,31 @@ app.post("/api/auth/change-password",requireAuth(),async(req,res)=>{
  const hash=await bcrypt.hash(next,12);await pool.query("update users set password_hash=$1,must_change_password=false,updated_at=now() where id=$2",[hash,req.user.sub]);await audit(req.user.sub,"password_changed","user",req.user.sub);res.json({ok:true});
 });
 app.get("/api/admin/users",requireAuth(["super_admin","admin"]),async(req,res)=>{
- const q=await pool.query("select id,email,display_name,role,status,must_change_password,created_at from users order by created_at desc");await audit(req.user.sub,"users_listed","user");res.json(q.rows);
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const q=await pool.query("select id,email,display_name,role,status,must_change_password,created_at from users where organization_id=$1 order by created_at desc",[organizationId]);
+ await audit(req.user.sub,"users_listed","user",null,{organizationId});res.json(q.rows);
 });
 app.patch("/api/admin/users/:id/role",requireAuth(["super_admin"]),async(req,res)=>{
  const role=String(req.body.role||"");if(!["super_admin","admin","developer","auditor","user"].includes(role))return res.status(400).json({error:"invalid_role"});
- const q=await pool.query("update users set role=$1,updated_at=now() where id=$2 returning id,email,role,status",[role,req.params.id]);if(!q.rows[0])return res.status(404).json({error:"not_found"});await audit(req.user.sub,"role_changed","user",req.params.id,{role});res.json(q.rows[0]);
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const q=await pool.query("update users set role=$1,updated_at=now() where id=$2 and organization_id=$3 returning id,email,role,status",[role,req.params.id,organizationId]);
+ if(!q.rows[0])return res.status(404).json({error:"not_found"});await audit(req.user.sub,"role_changed","user",req.params.id,{role,organizationId});res.json(q.rows[0]);
 });
 app.patch("/api/admin/users/:id/status",requireAuth(["super_admin","admin"]),async(req,res)=>{
  const status=String(req.body.status||"");if(!["active","disabled","pending"].includes(status))return res.status(400).json({error:"invalid_status"});
- const q=await pool.query("update users set status=$1,updated_at=now() where id=$2 returning id,email,role,status",[status,req.params.id]);if(!q.rows[0])return res.status(404).json({error:"not_found"});await audit(req.user.sub,"status_changed","user",req.params.id,{status});res.json(q.rows[0]);
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const q=await pool.query("update users set status=$1,updated_at=now() where id=$2 and organization_id=$3 returning id,email,role,status",[status,req.params.id,organizationId]);
+ if(!q.rows[0])return res.status(404).json({error:"not_found"});await audit(req.user.sub,"status_changed","user",req.params.id,{status,organizationId});res.json(q.rows[0]);
 });
-app.get("/api/admin/audit",requireAuth(["super_admin","admin","auditor"]),async(req,res)=>{const q=await pool.query("select id,actor_id,action,entity_type,entity_id,metadata,created_at from audit_log order by created_at desc limit 200");res.json(q.rows)});
+app.get("/api/admin/audit",requireAuth(["super_admin","admin","auditor"]),async(req,res)=>{
+ const uq=await pool.query("select organization_id from users where id=$1",[req.user.sub]); const organizationId=uq.rows[0]?.organization_id;
+ if(!organizationId)return res.status(403).json({error:"organization_required"});
+ const q=await pool.query("select a.id,a.actor_id,a.action,a.entity_type,a.entity_id,a.metadata,a.created_at,u.display_name as actor_name,u.email as actor_email from audit_log a left join users u on u.id=a.actor_id where u.organization_id=$1 order by a.created_at desc limit 200",[organizationId]);
+ res.json(q.rows)
+});
 
 app.get("/api/projects",requireAuth(),async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
