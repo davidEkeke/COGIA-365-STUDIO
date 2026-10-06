@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import express from "express";
 import helmet from "helmet";
 import bcrypt from "bcryptjs";
@@ -15,8 +16,42 @@ app.use(express.static(__dirname));
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.PGSSL==="require"?{rejectUnauthorized:false}:undefined}):null;
 const JWT_SECRET=process.env.JWT_SECRET;
 const ready=()=>pool&&JWT_SECRET;
+const RESET_TTL_MINUTES=30;
+const publicBaseUrl=req=>process.env.APP_URL||`${req.protocol}://${req.get("host")}`;
 
 app.get("/health",async(req,res)=>{try{if(pool)await pool.query("select 1");res.json({ok:true,database:!!pool,auth:!!JWT_SECRET})}catch(e){res.status(503).json({ok:false})}});
+app.post("/api/auth/forgot-password",async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const email=String(req.body.email||"").trim().toLowerCase();
+ if(!email)return res.status(400).json({error:"email_required"});
+ const q=await pool.query("select id,email,status from users where lower(email)=$1 limit 1",[email]);
+ const u=q.rows[0];
+ if(u&&u.status==="active"){
+  const raw=crypto.randomUUID()+crypto.randomUUID();
+  const tokenHash=await bcrypt.hash(raw,10);
+  await pool.query("delete from password_reset_tokens where user_id=$1 or expires_at<now()",[u.id]);
+  await pool.query("insert into password_reset_tokens(user_id,token_hash,expires_at) values($1,$2,now()+($3||' minutes')::interval)",[u.id,tokenHash,String(RESET_TTL_MINUTES)]);
+  await audit(u.id,"password_reset_requested","user",u.id);
+  if(process.env.NODE_ENV!=="production")console.log("Password reset:",publicBaseUrl(req)+"/?reset="+encodeURIComponent(raw));
+ }
+ res.json({ok:true,message:"Si cette adresse existe, une procédure de réinitialisation a été créée."});
+});
+app.post("/api/auth/reset-password",async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const token=String(req.body.token||""),next=String(req.body.newPassword||"");
+ if(!token||next.length<12)return res.status(400).json({error:"invalid_reset_request"});
+ const q=await pool.query("select id,user_id,token_hash from password_reset_tokens where used_at is null and expires_at>now() order by created_at desc limit 20");
+ let match=null;for(const row of q.rows){if(await bcrypt.compare(token,row.token_hash)){match=row;break}}
+ if(!match)return res.status(400).json({error:"invalid_or_expired_token"});
+ const hash=await bcrypt.hash(next,12);
+ await pool.query("begin");
+ try{
+  await pool.query("update users set password_hash=$1,must_change_password=false,updated_at=now() where id=$2",[hash,match.user_id]);
+  await pool.query("update password_reset_tokens set used_at=now() where id=$1",[match.id]);
+  await pool.query("commit");
+ }catch(e){await pool.query("rollback");throw e}
+ await audit(match.user_id,"password_reset_completed","user",match.user_id);res.json({ok:true});
+});
 app.post("/api/auth/login",async(req,res)=>{
  if(!ready())return res.status(503).json({error:"identity_service_not_configured"});
  const email=String(req.body.email||"").trim().toLowerCase(), password=String(req.body.password||"");
