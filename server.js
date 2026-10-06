@@ -79,6 +79,37 @@ app.patch("/api/projects/:id/status",requireAuth(["super_admin","admin","develop
  await audit(req.user.sub,"project_status_changed","project",req.params.id,{status});
  res.json(q.rows[0]);
 });
+app.get("/api/workspaces",requireAuth(),async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const q=await pool.query("select w.id,w.project_id,w.name,w.status,w.mode,w.created_at,p.name as project_name from workspaces w join projects p on p.id=w.project_id order by w.created_at desc");
+ res.json(q.rows);
+});
+app.post("/api/workspaces",requireAuth(["super_admin","admin","developer"]),async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const projectId=String(req.body.projectId||""),name=String(req.body.name||"").trim(),mode=String(req.body.mode||"local-first");
+ if(!projectId||!name)return res.status(400).json({error:"project_and_name_required"});
+ const q=await pool.query("insert into workspaces(project_id,name,mode) values($1,$2,$3) returning id,project_id,name,status,mode,created_at",[projectId,name,mode]);
+ await audit(req.user.sub,"workspace_created","workspace",q.rows[0].id,{projectId,name,mode});
+ res.status(201).json(q.rows[0]);
+});
+app.get("/api/decisions",requireAuth(),async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const q=await pool.query("select d.id,d.project_id,d.title,d.scope,d.status,d.created_at,p.name as project_name from project_decisions d join projects p on p.id=d.project_id order by d.created_at desc");
+ res.json(q.rows);
+});
+app.post("/api/decisions",requireAuth(["super_admin","admin","developer","auditor"]),async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const projectId=String(req.body.projectId||""),title=String(req.body.title||"").trim(),scope=String(req.body.scope||"").trim();
+ if(!projectId||!title)return res.status(400).json({error:"project_and_title_required"});
+ const q=await pool.query("insert into project_decisions(project_id,title,scope,created_by) values($1,$2,$3,$4) returning id,project_id,title,scope,status,created_at",[projectId,title,scope,req.user.sub]);
+ await audit(req.user.sub,"decision_created","decision",q.rows[0].id,{projectId,title,scope});
+ res.status(201).json(q.rows[0]);
+});
+app.get("/api/project-members",requireAuth(),async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const q=await pool.query("select pm.project_id,pm.user_id,pm.role,pm.created_at,p.name as project_name,u.display_name,u.email from project_members pm join projects p on p.id=pm.project_id join users u on u.id=pm.user_id order by pm.created_at desc");
+ res.json(q.rows);
+});
 app.get("/api/dashboard",requireAuth(),async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const [projectsCount,activeProjects,usersCount,auditCount]=await Promise.all([
