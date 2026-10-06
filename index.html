@@ -180,6 +180,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 @media(max-width:1180px){.work{padding:18px!important}.hero h1{font-size:25px!important}}
 @media(max-width:860px){.top{min-height:66px;height:auto!important}.work{padding:14px!important}.brand{min-height:92px!important}}
 @media(max-width:560px){.work{padding:10px!important}.hero{padding:16px!important}.hero h1{font-size:21px!important}.pilot-kpi{min-height:92px}.top{padding:10px!important}}
+
+/* === Navigation clarity V2.3 === */
+.sub a.is-current{background:#fff;color:var(--navy);font-weight:800;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.mod.active .sub{animation:navReveal .14s ease-out}
+@keyframes navReveal{from{opacity:.35;transform:translateY(-2px)}to{opacity:1;transform:none}}
+.view-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.view-heading h1{margin:4px 0 0;font-size:26px;line-height:1.2;letter-spacing:-.02em}
+.content-width{width:min(100%,1280px);margin:0 auto}
+@media(max-width:560px){.view-heading h1{font-size:22px}}
 </style></head>
 <body><div id="authScreen" class="auth-screen"><div class="auth-card"><div class="eyebrow">COGIA 365 STUDIO</div><h1>Connexion</h1><p>Accédez à votre espace de travail sécurisé.</p><div id="loginForm"><input id="loginEmail" type="email" placeholder="Adresse e-mail"><input id="loginPassword" type="password" placeholder="Mot de passe"><label class="auth-note"><input id="rememberMe" type="checkbox" style="width:auto"> Se souvenir de moi</label><button id="loginBtn" class="primary">Se connecter</button><button id="previewAccessBtn" type="button">Aperçu de l’application</button><div class="auth-links"><a id="forgotLink">Mot de passe oublié ?</a><a id="firstLoginLink">Première connexion</a></div></div><div id="resetForm" class="hidden"><p>Indiquez votre adresse e-mail. La procédure sécurisée de réinitialisation sera envoyée par le service d'identité.</p><input id="resetEmail" type="email" placeholder="Adresse e-mail"><button id="resetBtn" class="primary">Continuer</button><button id="backLogin">Retour à la connexion</button></div><p class="auth-note">La connexion sécurisée reste disponible. Pour tester l’interface sans identifiants, utilisez « Aperçu de l’application ».</p></div></div><div class="app">
 <aside class="left"><div class="brand"><div class="brand-lockup"><span class="brand-emblem" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="brand-title"><b>COGIA <span>365</span> Studio</b><small>AI Engineering & Compliance</small></span></div></div><div class="lic">LICENCE ACCORDÉE À<br><b>Cabinet One — Pack Professionnel</b><br><small>Licence active · Renouvellement : 31/08/2027</small></div>
@@ -196,6 +205,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 <div class="chat"><div class="chathead"><span class="dot"></span>Conversation COGIA — Disponible</div><div class="msg"><small>Projet actif : COGIA 365 Studio Full Web · Assistant de Cabinet One</small><p>Bonjour David. La conception de l’interface principale V2 est validée. Je peux maintenant poursuivre le développement, exécuter les contrôles et corriger les anomalies jusqu’à obtenir une version fonctionnelle.</p><p>◇ Analyser les risques　 ✓ Lancer les tests　 ▣ Générer les preuves</p></div><div class="composer"><input id="instruction" placeholder="Décrivez simplement votre besoin, sans vocabulaire technique…"><button id="sendBtn" class="primary">Envoyer ➜</button></div></div></section></main>
 <aside class="right"><div class="rtop">VUES</div><div class="tabs"><button class="on">Affichage</button><button>Interface</button><button>HTML</button></div><div class="preview"><small>FORMAT D’AFFICHAGE</small><h3>▣ Ordinateur　▯ Tablette　▯ Smartphone</h3><hr><p><b>Mission et runtime</b></p><div class="kpi"><div>Build<strong>● Sain</strong></div><div>Mode<strong>Local-first</strong></div><div>Contrôles<strong>40/40</strong></div><div>Version<strong>V2</strong></div></div><p><button id="previewBtn" class="primary">Ouvrir Live Preview</button></p><p><b>Artefacts récents</b><br>index.html V2<br>Interface principale HD<br>ADR-365-045 Cabinet One</p><p><span class="status">● Version Sites opérationnelle</span><br>Contrôles : <b>40/40 réussis</b><br>Synchronisation : mode hors ligne<br>OpenAI : à activer</p></div><div class="foot">© Cabinet One · COGIA 365 Studio V2</div></aside>
 </div><div id="shellOverlay" class="shell-overlay"></div><script>
+
+
+const setCurrentNav=(el)=>{document.querySelectorAll('.sub a').forEach(a=>a.classList.remove('is-current'));if(el)el.classList.add('is-current')};
+document.querySelectorAll('.sub a').forEach(a=>a.addEventListener('click',()=>setCurrentNav(a)));
+const normalizeContent=()=>{document.querySelectorAll('#pilotageView,#projectsView,#moduleView').forEach(v=>{if(v.style.display!=='none'&&v.innerHTML&&!v.firstElementChild?.classList.contains('content-width')){const w=document.createElement('div');w.className='content-width';while(v.firstChild)w.appendChild(v.firstChild);v.appendChild(w)}})};
+const contentObserver=new MutationObserver(()=>requestAnimationFrame(normalizeContent));contentObserver.observe(document.querySelector('.work'),{childList:true,subtree:true});
 
 const shellOverlay=document.getElementById('shellOverlay');
 const closeShell=()=>document.body.classList.remove('nav-open','views-open');
