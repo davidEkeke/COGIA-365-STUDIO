@@ -286,6 +286,41 @@ body{min-height:100%;-webkit-font-smoothing:antialiased;text-rendering:optimizeL
  .center{display:block!important}
  body{background:#fff}
 }
+
+/* === Final shell cleanup V2.6 === */
+.left{display:grid!important;grid-template-rows:auto auto minmax(0,1fr) auto auto}
+.brand{min-height:96px!important}
+.lic{font-size:11px!important}
+.nav{min-height:0!important}
+.ecosystem{min-height:92px}
+.agent{min-height:58px;display:flex;flex-direction:column;justify-content:center}
+.top{border-bottom:1px solid rgba(16,42,67,.08)!important}
+.work{background:linear-gradient(180deg,#f8fbfe 0,#f4f7fb 180px)}
+.content-width{padding-bottom:20px}
+.hero,.chat,.pilot-panel,.preview{background:rgba(255,255,255,.98)}
+.hero{max-width:1280px;margin:0 auto}
+.chat{max-width:1280px;margin-left:auto;margin-right:auto}
+.pilot-grid{align-items:stretch}
+.pilot-kpi strong{margin-top:6px}
+.pilot-kpi span{margin-top:2px}
+.pilot-panel h3{margin-top:0}
+.pilot-panel p:last-child{margin-bottom:0}
+.actions button{font-size:12px}
+.right{background:#fbfdff}
+.preview{background:#fff!important}
+.foot{font-size:11px}
+@media(max-height:700px) and (min-width:861px){
+ .brand{min-height:82px!important;padding:10px 14px!important}
+ .brand-title small{display:none}
+ .lic small{display:none}
+ .ecosystem{min-height:64px;padding:6px 10px}
+ .eco-title{display:none}
+ .eco-row{padding:3px}
+ .agent{min-height:48px;padding:7px 12px!important}
+ .nav{padding-top:7px!important;padding-bottom:7px!important}
+ .mod>button{padding:9px 11px!important}
+ .sub a{padding:6px 9px!important}
+}
 </style></head>
 <body><div id="authScreen" class="auth-screen"><div class="auth-card"><div class="eyebrow">COGIA 365 STUDIO</div><h1>Connexion</h1><p>Accédez à votre espace de travail sécurisé.</p><div id="loginForm"><input id="loginEmail" type="email" placeholder="Adresse e-mail"><input id="loginPassword" type="password" placeholder="Mot de passe"><label class="auth-note"><input id="rememberMe" type="checkbox" style="width:auto"> Se souvenir de moi</label><button id="loginBtn" class="primary">Se connecter</button><button id="previewAccessBtn" type="button">Aperçu de l’application</button><div class="auth-links"><a id="forgotLink">Mot de passe oublié ?</a><a id="firstLoginLink">Première connexion</a></div></div><div id="resetForm" class="hidden"><p>Indiquez votre adresse e-mail. La procédure sécurisée de réinitialisation sera envoyée par le service d'identité.</p><input id="resetEmail" type="email" placeholder="Adresse e-mail"><button id="resetBtn" class="primary">Continuer</button><button id="backLogin">Retour à la connexion</button></div><p class="auth-note">La connexion sécurisée reste disponible. Pour tester l’interface sans identifiants, utilisez « Aperçu de l’application ».</p></div></div><div class="app">
 <aside class="left"><div class="brand"><div class="brand-lockup"><span class="cogia-official"><span class="co-symbol"><i class="co-navy">C</i><i class="co-orange">◆</i><i class="co-blue">◆</i></span><span class="brand-title"><b>COGIA</b><span class="studio-line"><strong>365</strong> Studio</span><small>AI Engineering & Compliance</small></span></span></div></div><div class="lic">LICENCE ACCORDÉE À<br><b>Cabinet One — Pack Professionnel</b><br><small>Licence active · Renouvellement : 31/08/2027</small></div>
@@ -316,6 +351,14 @@ const normalizeContent=()=>{document.querySelectorAll('#pilotageView,#projectsVi
 const contentObserver=new MutationObserver(()=>requestAnimationFrame(normalizeContent));contentObserver.observe(document.querySelector('.work'),{childList:true,subtree:true});
 
 
+
+
+const setShellModeLabel=()=>{
+ const w=window.innerWidth;
+ document.documentElement.dataset.shellMode=w<=860?'mobile':w<=1180?'compact':'desktop';
+};
+setShellModeLabel();
+window.addEventListener('resize',setShellModeLabel,{passive:true});
 
 const syncViewport=()=>document.documentElement.style.setProperty('--app-vh',window.innerHeight+'px');
 syncViewport();window.addEventListener('resize',syncViewport,{passive:true});
