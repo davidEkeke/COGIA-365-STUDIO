@@ -271,5 +271,43 @@ app.get("/api/dashboard",requireAuth(),requirePasswordReady,async(req,res)=>{
   auditEvents:auditCount.rows[0].n
  });
 });
+app.get("/api/studio/jobs",requireAuth(),requirePasswordReady,async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const organizationId=req.user.organizationId;
+ const q=await pool.query("select id,project_id,job_type,status,instruction,result,created_at,started_at,finished_at from studio_jobs where organization_id=$1 order by created_at desc limit 100",[organizationId]);
+ res.json(q.rows);
+});
+app.post("/api/studio/jobs",requireAuth(["super_admin","admin","developer","auditor"]),requirePasswordReady,async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const organizationId=req.user.organizationId;
+ const jobType=String(req.body.jobType||"").trim();
+ const instruction=String(req.body.instruction||"").trim();
+ const projectId=req.body.projectId?String(req.body.projectId):null;
+ if(!["mission","design","build","test","codex","preview"].includes(jobType))return res.status(400).json({error:"invalid_job_type"});
+ if(["mission","design","codex"].includes(jobType)&&!instruction)return res.status(400).json({error:"instruction_required"});
+ if(projectId){
+  const pq=await pool.query("select id from projects where id=$1 and organization_id=$2",[projectId,organizationId]);
+  if(!pq.rows[0])return res.status(404).json({error:"project_not_found"});
+ }
+ const q=await pool.query("insert into studio_jobs(organization_id,project_id,job_type,instruction,created_by) values($1,$2,$3,$4,$5) returning id,project_id,job_type,status,instruction,result,created_at",[organizationId,projectId,jobType,instruction||null,req.user.sub]);
+ await audit(req.user.sub,"studio_job_created","studio_job",q.rows[0].id,{jobType,projectId});
+ res.status(201).json(q.rows[0]);
+});
+app.patch("/api/studio/jobs/:id/status",requireAuth(["super_admin","admin","developer","auditor"]),requirePasswordReady,async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const organizationId=req.user.organizationId;
+ const status=String(req.body.status||"").trim();
+ if(!["queued","running","succeeded","failed","cancelled"].includes(status))return res.status(400).json({error:"invalid_status"});
+ const q=await pool.query("update studio_jobs set status=$1,started_at=case when $1='running' and started_at is null then now() else started_at end,finished_at=case when $1 in ('succeeded','failed','cancelled') then now() else finished_at end where id=$2 and organization_id=$3 returning id,job_type,status,started_at,finished_at",[status,req.params.id,organizationId]);
+ if(!q.rows[0])return res.status(404).json({error:"not_found"});
+ await audit(req.user.sub,"studio_job_status_changed","studio_job",req.params.id,{status});
+ res.json(q.rows[0]);
+});
+app.get("/api/studio/jobs/:id/artifacts",requireAuth(),requirePasswordReady,async(req,res)=>{
+ if(!pool)return res.status(503).json({error:"database_not_configured"});
+ const organizationId=req.user.organizationId;
+ const q=await pool.query("select a.id,a.artifact_type,a.name,a.path,a.metadata,a.created_at from studio_artifacts a join studio_jobs j on j.id=a.job_id where a.job_id=$1 and j.organization_id=$2 order by a.created_at desc",[req.params.id,organizationId]);
+ res.json(q.rows);
+});
 app.use((err,req,res,next)=>{console.error(err);res.status(500).json({error:"internal_error"})});
 app.listen(process.env.PORT||8080,()=>console.log("COGIA 365 Studio listening"));
