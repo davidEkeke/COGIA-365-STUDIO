@@ -12,17 +12,21 @@ const app=express();
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 app.use(helmet({contentSecurityPolicy:false}));
 app.use(express.json({limit:"64kb"}));
+app.use("/api/auth",(req,res,next)=>{res.set("Cache-Control","no-store");next()});
+app.use("/api/admin",(req,res,next)=>{res.set("Cache-Control","no-store");next()});
 const authLimiter=rateLimit({windowMs:15*60*1000,limit:20,standardHeaders:"draft-7",legacyHeaders:false,message:{error:"too_many_requests"}});
 const resetLimiter=rateLimit({windowMs:60*60*1000,limit:5,standardHeaders:"draft-7",legacyHeaders:false,message:{error:"too_many_requests"}});
 app.use(express.static(__dirname));
 
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.PGSSL==="require"?{rejectUnauthorized:false}:undefined}):null;
 const JWT_SECRET=process.env.JWT_SECRET;
+if(JWT_SECRET&&JWT_SECRET.length<32)throw new Error("JWT_SECRET must contain at least 32 characters");
 const ready=()=>pool&&JWT_SECRET;
 const RESET_TTL_MINUTES=30;
 const publicBaseUrl=req=>process.env.APP_URL||`${req.protocol}://${req.get("host")}`;
 
 app.get("/health",async(req,res)=>{try{if(pool)await pool.query("select 1");res.json({ok:true,database:!!pool,auth:!!JWT_SECRET})}catch(e){res.status(503).json({ok:false})}});
+app.use(["/server.js","/package.json","/package-lock.json","/db","/.git","/.github"],(req,res)=>res.status(404).end());
 app.post("/api/auth/forgot-password",resetLimiter,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const email=String(req.body.email||"").trim().toLowerCase();
