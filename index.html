@@ -98,9 +98,91 @@ body.nav-open .shell-overlay,body.views-open .shell-overlay{display:block}
 @media (prefers-reduced-motion:reduce){
  *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+/* === Visual refinement V2.2 === */
+:root{
+ --navy:#102a43;--navy-2:#173b5e;--navy-3:#0b2136;
+ --blue:#1976d2;--green:#20a464;--orange:#f4a62a;--red:#df4b3f;
+ --bg:#f4f7fb;--surface:#ffffff;--surface-2:#f8fafc;
+ --line:#dce4ee;--line-strong:#cbd6e2;--text:#152536;--muted:#66798b;
+ --shadow-sm:0 1px 2px rgba(16,42,67,.04),0 4px 14px rgba(16,42,67,.04);
+ --shadow-md:0 12px 34px rgba(16,42,67,.10);
+ --radius:12px;--radius-lg:16px;
+}
+body{background:var(--bg);color:var(--text);line-height:1.45}
+button{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+button:hover{border-color:var(--line-strong)}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid rgba(25,118,210,.18);outline-offset:2px}
+.primary{box-shadow:0 4px 14px rgba(25,118,210,.18)}
+.primary:hover{background:#1468ba!important;transform:translateY(-1px)}
+.brand{padding:18px 18px!important;border-right:0!important;border-bottom:1px solid var(--line)}
+.brand-lockup{display:flex;align-items:center;gap:12px}
+.brand-emblem{width:42px;height:42px;border-radius:11px;background:var(--navy);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px;padding:7px;box-shadow:var(--shadow-sm)}
+.brand-emblem i{display:block;border-radius:3px}
+.brand-emblem i:nth-child(1){background:var(--blue)}
+.brand-emblem i:nth-child(2){background:var(--green)}
+.brand-emblem i:nth-child(3){background:var(--orange)}
+.brand-emblem i:nth-child(4){background:var(--red)}
+.brand-title{display:flex;flex-direction:column;min-width:0}
+.brand-title b{font-size:22px!important;line-height:1.05}
+.brand-title small{margin-top:5px!important;font-size:11px}
+.lic{background:var(--navy-3)!important;padding:12px 18px!important;line-height:1.45}
+.nav{padding:14px 12px 16px!important;scrollbar-width:thin;scrollbar-color:#365a78 transparent}
+.nav h5{font-size:11px;margin:8px 8px 12px!important}
+.mod{border-radius:10px!important;margin:6px 0!important}
+.mod>button{padding:12px 13px!important;border-radius:10px!important}
+.mod.active>button{background:var(--navy-2)!important;box-shadow:inset 3px 0 0 var(--blue)}
+.sub{padding:4px 6px 8px 16px!important}
+.sub a{cursor:pointer;padding:8px 10px!important;border-radius:8px!important}
+.sub a:hover{background:#214a70!important}
+.agent{border-top:1px solid var(--line)!important;box-shadow:0 -8px 20px rgba(16,42,67,.06)}
+.center{background:linear-gradient(180deg,#f8fbfe 0,#f4f7fb 190px)}
+.top{height:72px!important;padding:0 22px!important;box-shadow:0 1px 0 rgba(16,42,67,.04)}
+.top small{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--muted)}
+.top h2{font-size:17px!important;font-weight:750}
+.actions button,.mobile-shell-actions button{background:#fff;border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+.work{padding:24px!important}
+.hero,.chat,.pilot-panel,.pilot-kpi,.card,.preview{border-color:var(--line)!important;box-shadow:var(--shadow-sm)!important}
+.hero{border-radius:var(--radius-lg)!important;padding:24px!important}
+.hero h1{font-size:28px!important;line-height:1.16;letter-spacing:-.025em}
+.hero p{font-size:14px;line-height:1.6}
+.eyebrow{font-size:11px!important;letter-spacing:.12em!important}
+.cards{gap:12px!important}
+.card,.pilot-kpi{min-height:112px}
+.card b,.pilot-panel h3{font-size:14px}
+.pilot-kpi{display:flex;flex-direction:column;justify-content:center}
+.pilot-kpi strong{font-size:28px!important;letter-spacing:-.03em}
+.pilot-panel{overflow:hidden}
+.pilot-table thead th{background:var(--surface-2);color:#52677a;font-size:11px;text-transform:uppercase;letter-spacing:.05em;position:sticky;top:0;z-index:1}
+.pilot-table tbody tr:hover{background:#f8fbfe}
+.pilot-table th,.pilot-table td{padding:11px 12px!important}
+.pilot-toolbar{background:#fff;border:1px solid var(--line);padding:10px;border-radius:10px}
+.pilot-toolbar input,.pilot-toolbar select{min-height:40px}
+.chat{border-radius:var(--radius-lg)!important}
+.chathead{background:#fbfdff;padding:14px 16px!important}
+.msg{font-size:14px;line-height:1.6}
+.composer{background:#fbfdff}
+.right{box-shadow:-1px 0 0 rgba(16,42,67,.03)}
+.rtop{font-size:12px;letter-spacing:.08em}
+.tabs button{font-weight:650;color:#617487}
+.tabs button.on{font-weight:800}
+.preview{border-radius:var(--radius)!important;background:#fff}
+.kpi div{border:1px solid #edf2f7}
+.kpi strong{font-size:17px!important;margin-top:3px}
+.foot{background:#fbfdff}
+.auth-screen{background:radial-gradient(circle at 20% 10%,#fff 0,#f5f8fc 42%,#eaf0f6 100%)!important}
+.auth-card{border-radius:18px!important;box-shadow:0 24px 70px rgba(16,42,67,.16)!important}
+.auth-card>p{color:var(--muted)}
+.auth-card input{min-height:46px;background:#fbfdff}
+.auth-card button{border-radius:9px;border:1px solid var(--line);background:#fff;cursor:pointer}
+#previewAccessBtn{background:#f8fbfe}
+#previewAccessBtn:hover{background:#edf5fc}
+@media(max-width:1180px){.work{padding:18px!important}.hero h1{font-size:25px!important}}
+@media(max-width:860px){.top{min-height:66px;height:auto!important}.work{padding:14px!important}.brand{min-height:92px!important}}
+@media(max-width:560px){.work{padding:10px!important}.hero{padding:16px!important}.hero h1{font-size:21px!important}.pilot-kpi{min-height:92px}.top{padding:10px!important}}
 </style></head>
 <body><div id="authScreen" class="auth-screen"><div class="auth-card"><div class="eyebrow">COGIA 365 STUDIO</div><h1>Connexion</h1><p>Accédez à votre espace de travail sécurisé.</p><div id="loginForm"><input id="loginEmail" type="email" placeholder="Adresse e-mail"><input id="loginPassword" type="password" placeholder="Mot de passe"><label class="auth-note"><input id="rememberMe" type="checkbox" style="width:auto"> Se souvenir de moi</label><button id="loginBtn" class="primary">Se connecter</button><button id="previewAccessBtn" type="button">Aperçu de l’application</button><div class="auth-links"><a id="forgotLink">Mot de passe oublié ?</a><a id="firstLoginLink">Première connexion</a></div></div><div id="resetForm" class="hidden"><p>Indiquez votre adresse e-mail. La procédure sécurisée de réinitialisation sera envoyée par le service d'identité.</p><input id="resetEmail" type="email" placeholder="Adresse e-mail"><button id="resetBtn" class="primary">Continuer</button><button id="backLogin">Retour à la connexion</button></div><p class="auth-note">La connexion sécurisée reste disponible. Pour tester l’interface sans identifiants, utilisez « Aperçu de l’application ».</p></div></div><div class="app">
-<aside class="left"><div class="brand"><b>COGIA <span>365</span> Studio</b><small>AI Engineering & Compliance</small></div><div class="lic">LICENCE ACCORDÉE À<br><b>Cabinet One — Pack Professionnel</b><br><small>Licence active · Renouvellement : 31/08/2027</small></div>
+<aside class="left"><div class="brand"><div class="brand-lockup"><span class="brand-emblem" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="brand-title"><b>COGIA <span>365</span> Studio</b><small>AI Engineering & Compliance</small></span></div></div><div class="lic">LICENCE ACCORDÉE À<br><b>Cabinet One — Pack Professionnel</b><br><small>Licence active · Renouvellement : 31/08/2027</small></div>
 <nav class="nav"><h5>ORGANISATION</h5>
 <div class="mod" data-module="pilotage"><button>01 PILOTAGE ›</button><div class="sub"><a data-view="overview">Vue d’ensemble</a><a data-view="activities">Activités</a><a data-view="missions">Missions</a><a data-view="alerts">Alertes</a><a data-view="resume">Reprendre le travail</a></div></div>
 <div class="mod" data-module="projects"><button>02 PROJETS ›</button><div class="sub"><a data-project-view="all">Tous les projets</a><a data-project-view="workspaces">Workspaces</a><a data-project-view="teams">Équipes</a><a data-project-view="decisions">Décisions</a><a data-project-view="new">＋ Nouveau projet</a></div></div>
