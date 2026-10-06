@@ -221,6 +221,35 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 .guedia-g{width:30px;height:30px;border:4px solid #0d4d8f;border-right-color:#e00000;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:900;color:#0b3564;flex:0 0 30px}
 .agent{padding:12px 16px!important}
 @media(max-height:760px) and (min-width:861px){.ecosystem{padding:7px 12px}.eco-row{padding:4px}.eco-row small{display:none}.agent{padding:9px 14px!important}.brand{min-height:92px!important}.lic{padding:8px 14px!important}}
+
+/* === Three-zone shell balance V2.4 === */
+.app{grid-template-columns:272px minmax(0,1fr) 350px}
+.left{box-shadow:2px 0 16px rgba(16,42,67,.06);z-index:30}
+.center{min-width:0}
+.right{width:100%;overflow:hidden}
+.work{scrollbar-gutter:stable}
+.preview{margin:14px!important}
+.preview>h3{font-size:13px;line-height:1.5;margin:7px 0 12px}
+.kpi{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.kpi div{min-width:0}
+.kpi strong{overflow-wrap:anywhere}
+.tabs{background:#fbfdff}
+.tabs button{min-width:0}
+.agent{min-height:62px}
+.ecosystem{flex:0 0 auto}
+@media(min-width:1600px){
+ .app{grid-template-columns:290px minmax(0,1fr) 380px}
+ .work{padding:28px 32px!important}
+}
+@media(max-width:1280px) and (min-width:1181px){
+ .app{grid-template-columns:250px minmax(0,1fr) 320px}
+ .work{padding:18px!important}
+ .actions button{padding:8px 9px;font-size:12px}
+}
+
+.rtop{display:flex;align-items:center;justify-content:space-between}
+#closeViewsBtn{display:none;border:0;background:transparent;font-size:24px;line-height:1;color:#60758a;cursor:pointer;padding:2px 7px}
+@media(max-width:1180px){#closeViewsBtn{display:block}}
 </style></head>
 <body><div id="authScreen" class="auth-screen"><div class="auth-card"><div class="eyebrow">COGIA 365 STUDIO</div><h1>Connexion</h1><p>Accédez à votre espace de travail sécurisé.</p><div id="loginForm"><input id="loginEmail" type="email" placeholder="Adresse e-mail"><input id="loginPassword" type="password" placeholder="Mot de passe"><label class="auth-note"><input id="rememberMe" type="checkbox" style="width:auto"> Se souvenir de moi</label><button id="loginBtn" class="primary">Se connecter</button><button id="previewAccessBtn" type="button">Aperçu de l’application</button><div class="auth-links"><a id="forgotLink">Mot de passe oublié ?</a><a id="firstLoginLink">Première connexion</a></div></div><div id="resetForm" class="hidden"><p>Indiquez votre adresse e-mail. La procédure sécurisée de réinitialisation sera envoyée par le service d'identité.</p><input id="resetEmail" type="email" placeholder="Adresse e-mail"><button id="resetBtn" class="primary">Continuer</button><button id="backLogin">Retour à la connexion</button></div><p class="auth-note">La connexion sécurisée reste disponible. Pour tester l’interface sans identifiants, utilisez « Aperçu de l’application ».</p></div></div><div class="app">
 <aside class="left"><div class="brand"><div class="brand-lockup"><span class="cogia-official"><span class="co-symbol"><i class="co-navy">C</i><i class="co-orange">◆</i><i class="co-blue">◆</i></span><span class="brand-title"><b>COGIA</b><span class="studio-line"><strong>365</strong> Studio</span><small>AI Engineering & Compliance</small></span></span></div></div><div class="lic">LICENCE ACCORDÉE À<br><b>Cabinet One — Pack Professionnel</b><br><small>Licence active · Renouvellement : 31/08/2027</small></div>
@@ -241,7 +270,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 <section class="work"><div id="pilotageView" style="display:none"></div><div id="projectsView" style="display:none"></div><div id="moduleView" style="display:none"></div><div id="studioHome" class="hero"><div class="eyebrow">DE COGIA 365 STUDIO · Studio — COGIA</div><h1>De l’idée à une application fonctionnelle, contrôlée, documentée et démontrable.</h1><p>Exprimez l’idée, COGIA structure le projet : site, portail, application web, mobile, HTML, API ou réponse à appel d’offres.</p><p><b>Mission autonome</b> · Concevoir → Réaliser → Tester → Corriger → Prouver</p><button id="launchBtn" class="primary">▶ Lancer la réalisation autonome</button>
 <div class="cards"><div class="card"><b>Cadrage chargé</b><span class="status">✓ Prêt</span></div><div class="card"><b>Décisions structurantes vérifiées</b><span class="status">✓ OK</span></div><div class="card"><b>Baseline V2 protégée</b><span class="status">✓ OK</span></div></div><p class="status" style="margin-top:16px">✓ Aucune décision bloquante — COGIA poursuit seule la suite logique.</p></div>
 <div class="chat"><div class="chathead"><span class="dot"></span>Conversation COGIA — Disponible</div><div class="msg"><small>Projet actif : COGIA 365 Studio Full Web · Assistant de Cabinet One</small><p>Bonjour David. La conception de l’interface principale V2 est validée. Je peux maintenant poursuivre le développement, exécuter les contrôles et corriger les anomalies jusqu’à obtenir une version fonctionnelle.</p><p>◇ Analyser les risques　 ✓ Lancer les tests　 ▣ Générer les preuves</p></div><div class="composer"><input id="instruction" placeholder="Décrivez simplement votre besoin, sans vocabulaire technique…"><button id="sendBtn" class="primary">Envoyer ➜</button></div></div></section></main>
-<aside class="right"><div class="rtop">VUES</div><div class="tabs"><button class="on">Affichage</button><button>Interface</button><button>HTML</button></div><div class="preview"><small>FORMAT D’AFFICHAGE</small><h3>▣ Ordinateur　▯ Tablette　▯ Smartphone</h3><hr><p><b>Mission et runtime</b></p><div class="kpi"><div>Build<strong>● Sain</strong></div><div>Mode<strong>Local-first</strong></div><div>Contrôles<strong>40/40</strong></div><div>Version<strong>V2</strong></div></div><p><button id="previewBtn" class="primary">Ouvrir Live Preview</button></p><p><b>Artefacts récents</b><br>index.html V2<br>Interface principale HD<br>ADR-365-045 Cabinet One</p><p><span class="status">● Version Sites opérationnelle</span><br>Contrôles : <b>40/40 réussis</b><br>Synchronisation : mode hors ligne<br>OpenAI : à activer</p></div><div class="foot">© Cabinet One · COGIA 365 Studio V2</div></aside>
+<aside class="right"><div class="rtop"><span>VUES</span><button id="closeViewsBtn" aria-label="Fermer les vues">×</button></div><div class="tabs"><button class="on">Affichage</button><button>Interface</button><button>HTML</button></div><div class="preview"><small>FORMAT D’AFFICHAGE</small><h3>▣ Ordinateur　▯ Tablette　▯ Smartphone</h3><hr><p><b>Mission et runtime</b></p><div class="kpi"><div>Build<strong>● Sain</strong></div><div>Mode<strong>Local-first</strong></div><div>Contrôles<strong>40/40</strong></div><div>Version<strong>V2</strong></div></div><p><button id="previewBtn" class="primary">Ouvrir Live Preview</button></p><p><b>Artefacts récents</b><br>index.html V2<br>Interface principale HD<br>ADR-365-045 Cabinet One</p><p><span class="status">● Version Sites opérationnelle</span><br>Contrôles : <b>40/40 réussis</b><br>Synchronisation : mode hors ligne<br>OpenAI : à activer</p></div><div class="foot">© Cabinet One · COGIA 365 Studio V2</div></aside>
 </div><div id="shellOverlay" class="shell-overlay"></div><script>
 
 
@@ -249,6 +278,10 @@ const setCurrentNav=(el)=>{document.querySelectorAll('.sub a').forEach(a=>a.clas
 document.querySelectorAll('.sub a').forEach(a=>a.addEventListener('click',()=>setCurrentNav(a)));
 const normalizeContent=()=>{document.querySelectorAll('#pilotageView,#projectsView,#moduleView').forEach(v=>{if(v.style.display!=='none'&&v.innerHTML&&!v.firstElementChild?.classList.contains('content-width')){const w=document.createElement('div');w.className='content-width';while(v.firstChild)w.appendChild(v.firstChild);v.appendChild(w)}})};
 const contentObserver=new MutationObserver(()=>requestAnimationFrame(normalizeContent));contentObserver.observe(document.querySelector('.work'),{childList:true,subtree:true});
+
+
+const closeViewsBtn=document.getElementById('closeViewsBtn');
+if(closeViewsBtn)closeViewsBtn.onclick=()=>document.body.classList.remove('views-open');
 
 const shellOverlay=document.getElementById('shellOverlay');
 const closeShell=()=>document.body.classList.remove('nav-open','views-open');
