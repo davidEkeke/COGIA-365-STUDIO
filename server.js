@@ -442,7 +442,8 @@ app.get("/api/studio/preview/:workspaceId/*previewPath",requireAuth(),requirePas
  const q=await pool.query("select w.id from workspaces w join projects p on p.id=w.project_id where w.id=$1 and p.organization_id=$2",[req.params.workspaceId,organizationId]);
  if(!q.rows[0])return res.status(404).end();
  const root=path.resolve(safeWorkspacePath(req.params.workspaceId));
- const rawPreviewPath=req.params.previewPath;\n const rel=((Array.isArray(rawPreviewPath)?rawPreviewPath.join("/"):rawPreviewPath)||"index.html").replace(/^\\/+/, "");
+ const rawPreviewPath=req.params.previewPath;
+ const rel=((Array.isArray(rawPreviewPath)?rawPreviewPath.join("/"):rawPreviewPath)||"index.html").replace(/^\/+/, "");
  const target=path.resolve(root,rel);
  if(!target.startsWith(root+path.sep)&&target!==root)return res.status(403).end();
  const blocked=[".env",".git","package-lock.json","server.js"];
