@@ -102,3 +102,26 @@ create table if not exists studio_artifacts(
  created_at timestamptz not null default now()
 );
 create index if not exists idx_studio_artifacts_job on studio_artifacts(job_id);
+
+create table if not exists studio_agent_runs(
+ id uuid primary key default gen_random_uuid(),
+ job_id uuid not null references studio_jobs(id) on delete cascade,
+ agent_name text not null,
+ status text not null default 'queued' check(status in ('queued','running','succeeded','failed','skipped')),
+ input jsonb not null default '{}'::jsonb,
+ output jsonb not null default '{}'::jsonb,
+ started_at timestamptz,
+ finished_at timestamptz,
+ created_at timestamptz not null default now()
+);
+create index if not exists idx_studio_agent_runs_job on studio_agent_runs(job_id,created_at);
+
+create table if not exists studio_evidence(
+ id uuid primary key default gen_random_uuid(),
+ job_id uuid not null references studio_jobs(id) on delete cascade,
+ evidence_type text not null,
+ title text not null,
+ payload jsonb not null default '{}'::jsonb,
+ created_at timestamptz not null default now()
+);
+create index if not exists idx_studio_evidence_job on studio_evidence(job_id,created_at);
