@@ -310,7 +310,7 @@ const buildNodeRuntimeSpec=async(plan)=>{
  if(detected.stack!=="node")return {ok:false,detected,reason:"not_node_workspace"};
  const allowedFrameworks=new Set(["node","vite","react"]);
  if(!allowedFrameworks.has(detected.framework))return {ok:false,detected,reason:"framework_not_enabled"};
- return {ok:true,detected,isolation:{engine:"external-container",network:"dependency-install-only",runtimeNetwork:"disabled",readOnlyBase:true,workspaceWrite:"ephemeral",maxSeconds:120,maxMemoryMb:512,noNewPrivileges:true},commands:{install:detected.hasLockfile?"npm ci --ignore-scripts":"npm install --ignore-scripts",build:detected.buildScript?"npm run build":null,test:detected.testScript?"npm test -- --runInBand":null}};
+ return {ok:true,workspaceId:plan.workspaceId,workspaceName:plan.workspaceName,detected,isolation:{engine:"external-container",network:"dependency-install-only",runtimeNetwork:"disabled",readOnlyBase:true,workspaceWrite:"ephemeral",maxSeconds:120,maxMemoryMb:512,noNewPrivileges:true},commands:{install:detected.hasLockfile?"npm ci --ignore-scripts":"npm install --ignore-scripts",build:detected.buildScript?"npm run build":null,test:detected.testScript?"npm test":null}};
 };
 const executeStaticWorkspace=async(plan)=>{
  if(plan.mode!=="isolated-plan")return {ok:false,reason:plan.reason||"invalid_plan"};
@@ -352,6 +352,7 @@ const callExternalRunner=async(spec,job)=>{
     organizationId:job.organization_id,
     projectId:job.project_id,
     jobType:job.job_type,
+    workspaceId:spec?.workspaceId||null,
     workspace:spec,
     callbackMode:"inline-result"
    }),
@@ -418,7 +419,9 @@ const processStudioJob=async(job)=>{
     result={...result,kind:"preview_result",ready:execution.ok,plan,execution,message:execution.ok?"Static preview ready":"Static preview unavailable"};
    }
   }
-  await pool.query("update studio_jobs set status='succeeded',result=$1::jsonb,finished_at=now() where id=$2",[JSON.stringify(result),job.id]);
+  const executionFailed=(result?.ok===false)||(result?.kind==="preview_result"&&result?.ready===false);
+  const finalStatus=executionFailed?"failed":"succeeded";
+  await pool.query("update studio_jobs set status=$1,result=$2::jsonb,finished_at=now() where id=$3",[finalStatus,JSON.stringify(result),job.id]);
   await pool.query("insert into studio_artifacts(job_id,artifact_type,name,metadata) values($1,$2,$3,$4::jsonb)",[job.id,"runtime_result",job.job_type+"-result.json",JSON.stringify(result)]);
  }catch(err){
   await pool.query("update studio_jobs set status='failed',result=$1::jsonb,finished_at=now() where id=$2",[JSON.stringify({error:"runtime_failed",message:String(err.message||err)}),job.id]).catch(()=>{});
