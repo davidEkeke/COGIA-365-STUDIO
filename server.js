@@ -364,13 +364,31 @@ const callExternalRunner=async(spec,job)=>{
   return {ok:false,reason:e.name==="AbortError"?"runner_timeout":"runner_unreachable"};
  }finally{clearTimeout(timer)}
 };
+const orchestrateMissionAgents=async(job)=>{
+ const agents=[
+  ["Architecte",{focus:"Architecture, règles, données, contrôles"}],
+  ["Développeur",{focus:"Implémentation, workspace, build"}],
+  ["Testeur",{focus:"Tests fonctionnels, sécurité, régression"}],
+  ["Auditeur",{focus:"Conformité, anomalies, preuves"}]
+ ];
+ const outputs=[];
+ for(const [name,input] of agents){
+  const q=await pool.query("insert into studio_agent_runs(job_id,agent_name,status,input,started_at) values($1,$2,'running',$3::jsonb,now()) returning id",[job.id,name,JSON.stringify({...input,instruction:job.instruction})]);
+  const output={agent:name,summary:input.focus,recommendation:"Prêt pour orchestration contrôlée",sourceJob:job.id};
+  await pool.query("update studio_agent_runs set status='succeeded',output=$1::jsonb,finished_at=now() where id=$2",[JSON.stringify(output),q.rows[0].id]);
+  outputs.push(output);
+ }
+ await pool.query("insert into studio_evidence(job_id,evidence_type,title,payload) values($1,'orchestration','Agent orchestration evidence',$2::jsonb)",[job.id,JSON.stringify({agents:outputs.map(x=>x.agent),count:outputs.length})]);
+ return outputs;
+};
 const processStudioJob=async(job)=>{
  const started=new Date().toISOString();
  try{
   await pool.query("update studio_jobs set status='running',started_at=now() where id=$1 and status='queued'",[job.id]);
   let result={started,engine:"cogia-safe-runtime-v1"};
   if(job.job_type==="mission"){
-   result={...result,kind:"structured_mission",chain:["Métier","Processus","Règles","Données","Contrôles","Architecture","Fonctionnalités","Tests","Preuves"],instruction:job.instruction};
+   const agents=await orchestrateMissionAgents(job);
+   result={...result,kind:"structured_mission",chain:["Métier","Processus","Règles","Données","Contrôles","Architecture","Fonctionnalités","Tests","Preuves"],instruction:job.instruction,agents};
   }else if(job.job_type==="design"){
    result={...result,kind:"design_plan",instruction:job.instruction};
   }else if(job.job_type==="build"){
@@ -431,6 +449,16 @@ app.get("/api/studio/preview/:workspaceId/*",requireAuth(),requirePasswordReady,
  if(blocked.some(x=>rel.split("/").includes(x)))return res.status(404).end();
  res.set("Content-Security-Policy","default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'none'; frame-ancestors 'self'");
  res.sendFile(target,err=>{if(err&&!res.headersSent)res.status(404).end()});
+});
+app.get("/api/studio/jobs/:id/agents",requireAuth(),requirePasswordReady,async(req,res)=>{
+ const organizationId=req.user.organizationId;
+ const q=await pool.query("select r.id,r.agent_name,r.status,r.input,r.output,r.started_at,r.finished_at,r.created_at from studio_agent_runs r join studio_jobs j on j.id=r.job_id where r.job_id=$1 and j.organization_id=$2 order by r.created_at asc",[req.params.id,organizationId]);
+ res.json(q.rows);
+});
+app.get("/api/studio/jobs/:id/evidence",requireAuth(),requirePasswordReady,async(req,res)=>{
+ const organizationId=req.user.organizationId;
+ const q=await pool.query("select e.id,e.evidence_type,e.title,e.payload,e.created_at from studio_evidence e join studio_jobs j on j.id=e.job_id where e.job_id=$1 and j.organization_id=$2 order by e.created_at asc",[req.params.id,organizationId]);
+ res.json(q.rows);
 });
 app.get("/api/studio/jobs",requireAuth(),requirePasswordReady,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
