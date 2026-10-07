@@ -437,12 +437,12 @@ const claimStudioJob=async()=>{
  }catch(e){await client.query("rollback").catch(()=>{});console.error("Studio worker",e)}finally{client.release()}
 };
 if(pool)setInterval(()=>claimStudioJob().catch(e=>console.error("Studio worker tick",e)),3000);
-app.get("/api/studio/preview/:workspaceId/*",requireAuth(),requirePasswordReady,async(req,res)=>{
+app.get("/api/studio/preview/:workspaceId/*previewPath",requireAuth(),requirePasswordReady,async(req,res)=>{
  const organizationId=req.user.organizationId;
  const q=await pool.query("select w.id from workspaces w join projects p on p.id=w.project_id where w.id=$1 and p.organization_id=$2",[req.params.workspaceId,organizationId]);
  if(!q.rows[0])return res.status(404).end();
  const root=path.resolve(safeWorkspacePath(req.params.workspaceId));
- const rel=(req.params[0]||"index.html").replace(/^\/+/, "");
+ const rawPreviewPath=req.params.previewPath;\n const rel=((Array.isArray(rawPreviewPath)?rawPreviewPath.join("/"):rawPreviewPath)||"index.html").replace(/^\\/+/, "");
  const target=path.resolve(root,rel);
  if(!target.startsWith(root+path.sep)&&target!==root)return res.status(403).end();
  const blocked=[".env",".git","package-lock.json","server.js"];
