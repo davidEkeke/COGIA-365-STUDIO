@@ -26,7 +26,7 @@ const ready=()=>pool&&JWT_SECRET;
 const RESET_TTL_MINUTES=30;
 const publicBaseUrl=req=>process.env.APP_URL||`${req.protocol}://${req.get("host")}`;
 
-app.get("/health",async(req,res)=>{try{if(pool)await pool.query("select 1");res.json({ok:true,database:!!pool,auth:!!JWT_SECRET})}catch(e){res.status(503).json({ok:false})}});
+app.get("/health",async(req,res)=>{try{if(pool)await pool.query("select 1");res.json({ok:true,database:!!pool,auth:!!JWT_SECRET,runner:!!process.env.STUDIO_RUNNER_URL})}catch(e){res.status(503).json({ok:false,database:false,auth:!!JWT_SECRET,runner:!!process.env.STUDIO_RUNNER_URL})}});
 app.use(["/server.js","/package.json","/package-lock.json","/db","/.git","/.github"],(req,res)=>res.status(404).end());
 app.post("/api/auth/forgot-password",resetLimiter,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
