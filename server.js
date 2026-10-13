@@ -9,6 +9,8 @@ import pg from "pg";
 import path from "path";
 import {fileURLToPath} from "url";
 
+if(process.env.NODE_ENV!=="production")try{process.loadEnvFile?.(".env.local")}catch{}
+
 const app=express();
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 app.use(helmet({contentSecurityPolicy:false}));
@@ -17,6 +19,7 @@ app.use("/api/auth",(req,res,next)=>{res.set("Cache-Control","no-store");next()}
 app.use("/api/admin",(req,res,next)=>{res.set("Cache-Control","no-store");next()});
 const authLimiter=rateLimit({windowMs:15*60*1000,limit:20,standardHeaders:"draft-7",legacyHeaders:false,message:{error:"too_many_requests"}});
 const resetLimiter=rateLimit({windowMs:60*60*1000,limit:5,standardHeaders:"draft-7",legacyHeaders:false,message:{error:"too_many_requests"}});
+const agentLimiter=rateLimit({windowMs:15*60*1000,limit:30,standardHeaders:"draft-7",legacyHeaders:false,message:{error:"agent_rate_limit"}});
 app.use(express.static(__dirname));
 
 const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.PGSSL==="require"?{rejectUnauthorized:false}:undefined}):null;
@@ -27,8 +30,37 @@ const STUDIO_RUNNER_URL=process.env.STUDIO_RUNNER_URL||(process.env.NODE_ENV==="
 const RESET_TTL_MINUTES=30;
 const publicBaseUrl=req=>process.env.APP_URL||`${req.protocol}://${req.get("host")}`;
 
-app.get("/health",async(req,res)=>{const runnerReady=!!(STUDIO_RUNNER_URL&&process.env.STUDIO_RUNNER_TOKEN);try{if(pool)await pool.query("select 1");res.json({ok:true,database:!!pool,auth:!!JWT_SECRET,runner:runnerReady})}catch(e){res.status(503).json({ok:false,database:false,auth:!!JWT_SECRET,runner:runnerReady})}});
+app.get("/health",async(req,res)=>{const runnerReady=!!(STUDIO_RUNNER_URL&&process.env.STUDIO_RUNNER_TOKEN);try{if(pool)await pool.query("select 1");res.json({ok:true,database:!!pool,auth:!!JWT_SECRET,runner:runnerReady,agent:!!process.env.OPENAI_API_KEY})}catch(e){res.status(503).json({ok:false,database:false,auth:!!JWT_SECRET,runner:runnerReady,agent:!!process.env.OPENAI_API_KEY})}});
 app.use(["/server.js","/package.json","/package-lock.json","/db","/.git","/.github"],(req,res)=>res.status(404).end());
+app.post("/api/agent/respond",agentLimiter,async(req,res)=>{
+ const apiKey=process.env.OPENAI_API_KEY;
+ if(!apiKey)return res.status(503).json({error:"agent_not_configured"});
+ const instruction=String(req.body.instruction||"").trim();
+ const previousResponseId=req.body.previousResponseId?String(req.body.previousResponseId):undefined;
+ if(!instruction)return res.status(400).json({error:"instruction_required"});
+ if(instruction.length>4000)return res.status(400).json({error:"instruction_too_long"});
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),60000);
+ try{
+  const upstream=await fetch("https://api.openai.com/v1/responses",{
+   method:"POST",signal:controller.signal,
+   headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json"},
+   body:JSON.stringify({
+    model:process.env.OPENAI_MODEL||"gpt-5.5",
+    instructions:"Tu es COGIA Agent, l'assistant stratégique de COGIA 365 Studio. Réponds en français, de manière claire, concrète et professionnelle. Aide à concevoir, développer, contrôler, documenter et déployer des projets. Ne prétends jamais avoir exécuté une action qui n'a pas été réellement effectuée.",
+    input:instruction,
+    ...(previousResponseId?{previous_response_id:previousResponseId}:{}),
+    max_output_tokens:900
+   })
+  });
+  const data=await upstream.json().catch(()=>({}));
+  if(!upstream.ok){console.error("OpenAI response error",upstream.status,data?.error?.code||data?.error?.type||"unknown");return res.status(upstream.status===429?429:502).json({error:upstream.status===429?"agent_busy":"agent_upstream_error"})}
+  const text=String(data.output_text||data.output?.flatMap(item=>item.content||[]).filter(item=>item.type==="output_text").map(item=>item.text).join("\n")||"").trim();
+  if(!text)return res.status(502).json({error:"agent_empty_response"});
+  res.json({text,responseId:data.id,model:data.model});
+ }catch(e){res.status(e.name==="AbortError"?504:502).json({error:e.name==="AbortError"?"agent_timeout":"agent_unavailable"})}
+ finally{clearTimeout(timer)}
+});
 app.post("/api/auth/forgot-password",resetLimiter,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
  const email=String(req.body.email||"").trim().toLowerCase();
