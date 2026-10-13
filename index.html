@@ -509,7 +509,11 @@ document.getElementById('searchBtn').onclick=openSearch;
 document.getElementById('mobileSearchBtn').onclick=openSearch;
 document.getElementById('closeSearchBtn').onclick=()=>searchDialog.close();
 searchInput.oninput=renderSearch;
-document.getElementById('sendBtn').onclick=()=>{const i=document.getElementById('instruction');if(i.value.trim()){document.querySelector('.msg').insertAdjacentHTML('beforeend','<p><b>Instruction :</b> '+i.value.replace(/[<>]/g,'')+'</p>');i.value='';toast('Instruction ajoutée à la conversation COGIA')}};
+const chatBox=document.querySelector('.msg'),instructionInput=document.getElementById('instruction'),sendButton=document.getElementById('sendBtn');
+const appendChatMessage=(label,text,kind='')=>{const p=document.createElement('p');if(kind)p.className=kind;const b=document.createElement('b');b.textContent=label+' : ';p.appendChild(b);p.appendChild(document.createTextNode(text));chatBox.appendChild(p);p.scrollIntoView({block:'nearest'})};
+const sendInstruction=async()=>{const instruction=instructionInput.value.trim();if(!instruction||sendButton.disabled)return;appendChatMessage('Vous',instruction);instructionInput.value='';if(!authToken()){appendChatMessage('COGIA','Mode aperçu : instruction enregistrée localement. Connectez-vous pour créer une mission réelle.','auth-note');toast('Instruction ajoutée en mode aperçu');return}sendButton.disabled=true;sendButton.textContent='Envoi…';try{const job=await createStudioJob('mission',instruction);if(job)appendChatMessage('COGIA','Mission '+job.status+' · suivi disponible dans Studio.');else appendChatMessage('COGIA','La mission n’a pas pu être créée.','sev high')}finally{sendButton.disabled=false;sendButton.textContent='Envoyer ➜'}};
+sendButton.onclick=sendInstruction;
+instructionInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendInstruction()}});
 
 const auth=document.getElementById('authScreen'),loginForm=document.getElementById('loginForm'),resetForm=document.getElementById('resetForm'),newPasswordForm=document.getElementById('newPasswordForm'),changePasswordForm=document.getElementById('changePasswordForm');
 const showAuthPane=p=>{[loginForm,resetForm,newPasswordForm,changePasswordForm].forEach(x=>x.classList.add('hidden'));p.classList.remove('hidden')};
