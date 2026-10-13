@@ -23,10 +23,11 @@ const pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DA
 const JWT_SECRET=process.env.JWT_SECRET;
 if(JWT_SECRET&&JWT_SECRET.length<32)throw new Error("JWT_SECRET must contain at least 32 characters");
 const ready=()=>pool&&JWT_SECRET;
+const STUDIO_RUNNER_URL=process.env.STUDIO_RUNNER_URL||(process.env.NODE_ENV==="production"?"http://cogia-studio-runner:8090/run":"");
 const RESET_TTL_MINUTES=30;
 const publicBaseUrl=req=>process.env.APP_URL||`${req.protocol}://${req.get("host")}`;
 
-app.get("/health",async(req,res)=>{try{if(pool)await pool.query("select 1");res.json({ok:true,database:!!pool,auth:!!JWT_SECRET,runner:!!process.env.STUDIO_RUNNER_URL})}catch(e){res.status(503).json({ok:false,database:false,auth:!!JWT_SECRET,runner:!!process.env.STUDIO_RUNNER_URL})}});
+app.get("/health",async(req,res)=>{const runnerReady=!!(STUDIO_RUNNER_URL&&process.env.STUDIO_RUNNER_TOKEN);try{if(pool)await pool.query("select 1");res.json({ok:true,database:!!pool,auth:!!JWT_SECRET,runner:runnerReady})}catch(e){res.status(503).json({ok:false,database:false,auth:!!JWT_SECRET,runner:runnerReady})}});
 app.use(["/server.js","/package.json","/package-lock.json","/db","/.git","/.github"],(req,res)=>res.status(404).end());
 app.post("/api/auth/forgot-password",resetLimiter,async(req,res)=>{
  if(!pool)return res.status(503).json({error:"database_not_configured"});
@@ -338,7 +339,7 @@ const executeStaticWorkspace=async(plan)=>{
  };
 };
 const callExternalRunner=async(spec,job)=>{
- const url=process.env.STUDIO_RUNNER_URL;
+ const url=STUDIO_RUNNER_URL;
  const token=process.env.STUDIO_RUNNER_TOKEN;
  if(!url)return {ok:false,reason:"runner_not_configured",spec};
  const controller=new AbortController();
